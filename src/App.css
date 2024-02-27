@@ -1,38 +1,37 @@
-.App {
-  text-align: center;
+.search_input:hover {
+  box-shadow: #8a84e3 0px 0px 14px 3px;
+  border-radius: 5px;
+  transition-duration: 400ms;
+}
+.search_input {
+  transition-duration: 400ms;
+  border: solid 1px #8a84e3;
+  border-radius: 5px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.search_input .search_button {
+  padding: 5px;
+  transition-duration: 200ms;
+  cursor: pointer;
+  border-radius: 2px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.search_input .search_button:hover {
+  transition-duration: 200ms;
+  background-color: rgb(114, 132, 255);
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.mapPart {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.gmnoprint {
+  display: none;
 }
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.gm-style-cc {
+  display: none;
+}
+a[aria-label="Open this area in Google Maps (opens a new window)"] {
+  display: none !important;
 }
