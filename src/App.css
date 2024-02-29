@@ -35,3 +35,8 @@
 a[aria-label="Open this area in Google Maps (opens a new window)"] {
   display: none !important;
 }
+
+.product_title {
+  font-size: 15x;
+  font-weight: 600;
+}

@@ -1,20 +1,20 @@
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MapComponent from "./googl_map";
 import SearchInput from "./search_input";
-import { Col, Row } from "react-bootstrap";
+import { Button, Col, Row } from "react-bootstrap";
 import * as setting from "../config";
 
 function SetLocationComponent(props) {
   const {
-    locationName,
-    setLocationName,
+    rateData,
+    setLocationInfo,
     mapConfig,
     setMapConfig,
     markers,
     setMarkers,
-    rateData,
   } = props;
+
   const [googleService, setGoogleService] = useState(null);
   const [google, setGoogle] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -22,8 +22,8 @@ function SetLocationComponent(props) {
   const [pointLocationName, setPointLocationName] = useState("");
   const [currency, setCurrency] = useState({ name: "USD", symbol: "$" });
 
-  const [mapLoading, setMapLoading] = useState(true);
-  // const [locationName, setLocationName] = useState("");
+  // const [mapLoading, setMapLoading] = useState(true);
+  const [locationName, setLocationName] = useState("");
   // const [mapConfig, setMapConfig] = useState({
   //   // center: {},
   //   center: { lat: 37.7, lng: -122.4 },
@@ -36,6 +36,10 @@ function SetLocationComponent(props) {
   //   },
   // ]);
 
+  const [markersJsonString, setMarkersJsonString] = useState(
+    JSON.stringify(markers)
+  );
+
   const mapRef = useRef(null);
 
   const MapZoomChanged = (mapProps, map) => {
@@ -47,85 +51,118 @@ function SetLocationComponent(props) {
     });
   };
 
-  const SearchLocaiton = () => {
-    // console.log(locationName);
-    const request = {
-      // location: mapConfig.center,
-      // radius: '500',
-      // type: ['food']
-      query: locationName,
-      fields: ["name", "geometry"],
-    };
-    setMapLoading(true);
-    googleService.findPlaceFromQuery(request, function (results, status) {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        // for (var i = 0; i < results.length; i++) {
-        //   createMarker(results[i]);
-        // }
-        // console.log(results[0].geometry.location.lat());
-        setMapConfig({
-          ...mapConfig,
-          center: {
-            lat: results[0].geometry.location.lat(),
-            lng: results[0].geometry.location.lng(),
-          },
-        });
-        setTimeout(() => {
-          setMarkers([
-            // ...markers,
-            {
+  const findLocaionFunc = (value) => {
+    if (value !== "") {
+      const request = {
+        // location: mapConfig.center,
+        // radius: '500',
+        // type: ['food']
+        query: value,
+        fields: ["name", "geometry"],
+      };
+      // setMapLoading(true);
+      googleService.findPlaceFromQuery(request, function (results, status) {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          // for (var i = 0; i < results.length; i++) {
+          //   createMarker(results[i]);
+          // }
+          // console.log(results[0].geometry.location.lat());
+          setMapConfig({
+            ...mapConfig,
+            center: {
               lat: results[0].geometry.location.lat(),
               lng: results[0].geometry.location.lng(),
-              // name: "Position " + randomstring.generate(7),
-              // markerType: markerType
             },
-          ]);
-        }, 150);
-        mapRef.current.map.setCenter({
-          lat: results[0].geometry.location.lat(),
-          lng: results[0].geometry.location.lng(),
-        });
-      } else {
-        setMapLoading(false);
-      }
-    });
+          });
+          setTimeout(() => {
+            setMarkers([
+              {
+                lat: results[0].geometry.location.lat(),
+                lng: results[0].geometry.location.lng(),
+              },
+            ]);
+          }, 150);
+          mapRef.current.map.setCenter({
+            lat: results[0].geometry.location.lat(),
+            lng: results[0].geometry.location.lng(),
+          });
+        } else {
+        }
+      });
+    }
+  };
+  const onChangeLocationName = (value) => {
+    setLocationName(value);
+    findLocaionFunc(value);
   };
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+  }, [locationName, markersJsonString]);
+
   useEffect(() => {
-    if (locationName !== "" && mounted === true) {
-      SearchLocaiton();
-    }
-  }, [locationName]);
+    setMarkersJsonString(JSON.stringify(markers));
+  }, [markers]);
 
-  const setCountryName = async (coordinate) => {
-    try {
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinate.lat},${coordinate.lng}&key=${setting.apiKey}`
-      );
+  useEffect(() => {
+    async function fetchData() {
+      if (mounted === true) {
+        try {
+          const response = await axios.get(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${markers[0].lat},${markers[0].lng}&key=${setting.apiKey}`
+          );
 
-      if (response.data.results.length > 0) {
-        // Extract the country from the first result
-        const countryInfo = response.data.results[0].address_components.find(
-          (component) => component.types.includes("country")
-        );
-        const pointName = response.data.results[0].formatted_address;
-        setCountry(countryInfo.long_name);
-        setPointLocationName(pointName);
-        currecyFunc(countryInfo.long_name);
-      } else {
-        setCountry("");
+          if (response.data.results.length > 0) {
+            // Extract the country from the first result
+            let country = "",
+              locality = "",
+              area = "",
+              pointName = "";
+            for (const ele of response.data.results) {
+              for (const component of ele.address_components) {
+                if (component.types.includes("country")) {
+                  country = component.long_name;
+                }
+                if (component.types.includes("locality")) {
+                  locality = component.long_name;
+                }
+                if (
+                  component.types.includes("administrative_area_level_1") ||
+                  component.types.includes("administrative_area_level_2") ||
+                  component.types.includes("administrative_area_level_3")
+                ) {
+                  area = component.long_name;
+                }
+
+                if (country !== "" && locality !== "" && area !== "") break;
+              }
+
+              if (country !== "" && locality !== "" && area !== "") {
+                pointName = `${area}, ${locality}, ${country}`;
+                break;
+              }
+            }
+
+            // const pointName = response.data.results[0].formatted_address;
+            setCountry(country);
+            setPointLocationName(pointName);
+            await currecyFunc(country);
+          } else {
+            setCountry("");
+          }
+        } catch (error) {
+          console.error(
+            "Error fetching data from Google Maps Geocoding API:",
+            error
+          );
+          setCountry("Please select the correct point!");
+          setPointLocationName("");
+        }
+        setMounted(false);
       }
-    } catch (error) {
-      console.error(
-        "Error fetching data from Google Maps Geocoding API:",
-        error
-      );
-      setCountry("");
     }
-  };
+    fetchData();
+  }, [markers, mounted, locationName]);
 
   const currecyFunc = async (countryFullName) => {
     try {
@@ -147,59 +184,86 @@ function SetLocationComponent(props) {
     } catch (error) {}
   };
 
-  useEffect(() => {
-    setCountryName({ ...markers[0] });
-  }, [markers]);
+  // useEffect(() => {
+  //   setCountryName({ ...markers[0] });
+  // }, [markers]);
+
+  const setLocationCheck = () => {
+    if (pointLocationName !== "") {
+      setLocationInfo({
+        locationName: pointLocationName,
+        currencyInfo: {
+          rate: rateData[currency.name],
+          name: currency.name,
+          symbol: currency.symbol,
+        },
+      });
+    }
+  };
 
   return (
     <div>
-      <Row>
+      <Row className="align-items-center">
         <Col className="p-3">
           <div className="mb-2">
-            <span className="h4">location search:</span>
+            <span className="h5">location search:</span>
           </div>
           <SearchInput
             searchValue={locationName}
-            setSearchValue={setLocationName}
+            setSearchValue={onChangeLocationName}
             placeholder="Type location..."
           ></SearchInput>
           {/* <FormGroup className="mt-3">
-                      <FormCheckLabel className="me-3">Select the point from map:</FormCheckLabel>
-                      <FormCheckInput type="checkbox" checked={selectPoint} onChange={onChangeSelectPoint}></FormCheckInput>
-                    </FormGroup> */}
+                <FormCheckLabel className="me-3">Select the point from map:</FormCheckLabel>
+                <FormCheckInput type="checkbox" checked={selectPoint} onChange={onChangeSelectPoint}></FormCheckInput>
+              </FormGroup> */}
           <div className="mt-3">
             <div>
               <span className="h5">Country:</span>
-              <span className="small m-3">{country}</span>
+              <span className="h5 m-3 text-secondary">{country}</span>
             </div>
             <div>
               <span className="h5">Point Location Name:</span>
-              <div className="small">{pointLocationName}</div>
+              <div className="h5 text-secondary">{pointLocationName}</div>
             </div>
             <div>
               <span className="h5">Currency:</span>
-              <div className="small">
+              <div className="h5 text-secondary">
                 {rateData[currency.name]} {currency.symbol}
               </div>
             </div>
           </div>
           <div className="mt-3">
             <div className="mb-2">
-              <span className="h4">Coordinate:</span>
+              <span className="h5">Coordinate:</span>
             </div>
             <div className="mb-2">
-              <span className="h5">latitude: {markers[0].lat}</span>
+              <span className="small">
+                <b>latitude: </b>
+                {markers[0].lat}
+              </span>
             </div>
             <div className="mb-2">
-              <span className="h5">longitude: {markers[0].lng}</span>
+              <span className="small">
+                <b>longitude: </b>
+                {markers[0].lng}
+              </span>
             </div>
+          </div>
+          <div className="mt-5 d-flex justify-content-center">
+            <Button
+              onClick={setLocationCheck}
+              disabled={pointLocationName === ""}
+            >
+              Choose the location
+            </Button>
           </div>
         </Col>
         <Col>
           <div className="mapPart py-4">
             <div style={{ width: "400px", height: "400px" }}>
               <MapComponent
-                setMapLoading={setMapLoading}
+                // setMapLoading={setMapLoading}
                 // size={size}
                 // _mapStyle={mapStyle}
                 _mapConfig={mapConfig}

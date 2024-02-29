@@ -15,11 +15,17 @@ import "./App.css";
 import * as setting from "./config";
 
 function App() {
-  const [searchProduct, setSearchProduct] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [rateData, setRateData] = useState({});
+  const [locationInfo, setLocationInfo] = useState({
+    locationName: "",
+    currencyInfo: {
+      rate: "",
+      name: "",
+      symbol: "",
+    },
+  });
 
-  const [locationName, setLocationName] = useState("");
   const [mapConfig, setMapConfig] = useState({
     // center: {},
     center: { lat: 37.7, lng: -122.4 },
@@ -57,10 +63,7 @@ function App() {
     <div className="App">
       <Container>
         <Head modalOpen={modalOpenToggle}></Head>
-        <Shopping
-          searchProduct={searchProduct}
-          setSearchProduct={setSearchProduct}
-        ></Shopping>
+        <Shopping locationInfo={locationInfo}></Shopping>
       </Container>
       <Modal
         show={modalOpen}
@@ -70,13 +73,12 @@ function App() {
       >
         <Modal.Body>
           <SetLocationComponent
-            locationName={locationName}
-            setLocationName={setLocationName}
             mapConfig={mapConfig}
             setMapConfig={setMapConfig}
             markers={markers}
             setMarkers={setMarkers}
             rateData={rateData}
+            setLocationInfo={setLocationInfo}
           />
         </Modal.Body>
       </Modal>

@@ -5,44 +5,31 @@ import * as setting from "../config";
 function MapContainer(props) {
   const {
     _mapStyle,
-    setMapLoading,
+    // setMapLoading,
     setGoogleService,
     setGoogle,
-    _mapConfig,
+    // _mapConfig,
     mapRef,
-    clickable,
+    // clickable,
     markers,
     setMarkers,
   } = props;
 
   const [mapData, setMapData] = useState(null);
-  const [containerStyle, setContainerStyle] = useState({
+
+  const containerStyle = {
     width: "400px",
     height: "400px",
-  });
-  // const [mapCenter, setMapCenter] = useState(_mapConfig.center);
+  };
 
-  const mapClicked = useCallback(
-    (mapProps, map, clickEvent) => {
-      setMarkers([
-        {
-          lat: clickEvent.latLng.lat(),
-          lng: clickEvent.latLng.lng(),
-        },
-      ]);
-    },
-    [clickable, setMarkers]
-  );
-
-  // const onClickMarker = useCallback(
-  //   (props, marker, e) => {
-  //     const index = markers.findIndex((marker) => marker.name === props.name);
-  //     let newMarkers = markers;
-  //     newMarkers.splice(index, 1);
-  //     setMarkers([...newMarkers]);
-  //   },
-  //   [markers, setMarkers]
-  // );
+  const mapClicked = (mapProps, map, clickEvent) => {
+    setMarkers([
+      {
+        lat: clickEvent.latLng.lat(),
+        lng: clickEvent.latLng.lng(),
+      },
+    ]);
+  };
 
   useEffect(() => {
     if (mapData !== null) {
@@ -51,24 +38,6 @@ function MapContainer(props) {
       });
     }
   }, [mapData, _mapStyle]);
-
-  // useEffect(() => {
-  //   setMapCenter({
-  //     lat: _mapConfig.center.lat,
-  //     lng: _mapConfig.center.lng,
-  //   })
-  // }, [_mapConfig.center])
-
-  // useEffect(() => {
-  //   setMapLoading(true);
-  // }, [size, _mapStyle, setMapLoading]);
-
-  // useEffect(() => {
-  //   setContainerStyle({
-  //     width: size.wid + "px",
-  //     height: size.hei + "px",
-  //   });
-  // }, [size]);
 
   const mapLoaded = useCallback(
     (mapProps, map) => {
