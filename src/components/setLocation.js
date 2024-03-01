@@ -191,6 +191,7 @@ function SetLocationComponent(props) {
   const setLocationCheck = () => {
     if (pointLocationName !== "") {
       setLocationInfo({
+        country: country,
         locationName: pointLocationName,
         currencyInfo: {
           rate: rateData[currency.name],

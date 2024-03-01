@@ -10,6 +10,7 @@ import image1 from "../assests/BiYaab Search Globally With No Restrictions.png";
 import map from "../assests/map.png";
 
 import * as setting from "../config";
+import countryData from "../google-countries.json";
 
 function ShoppingComponent(props) {
   const { locationInfo } = props;
@@ -22,8 +23,15 @@ function ShoppingComponent(props) {
     if (searchName !== "" && locationInfo.locationName !== "") {
       try {
         setLoading(true);
+        console.log(countryData);
+        const countryInfo = countryData.find(
+          (el) => el.country_name === locationInfo.country
+        );
+        console.log(countryInfo);
+        const countryCode = countryInfo.country_code;
+
         const response = await axios.get(
-          `${setting.backend}/shopping/${
+          `${setting.backend}/shopping/${countryCode}/${
             locationInfo.locationName
           }/${searchName}?start=${(page - 1) * num}&num=${num}`
         );
