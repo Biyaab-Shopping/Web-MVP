@@ -17,8 +17,8 @@ app.get("/api/shopping/:country/:location/:product", (req, res) => {
       res.json(response.data);
     })
     .catch((error) => {
-      // console.log(error);
-      res.status(400).json(error);
+      console.log(error.response.data);
+      res.status(400).json(error.response.data);
     });
 });
 

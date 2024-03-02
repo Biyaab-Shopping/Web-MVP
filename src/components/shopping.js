@@ -30,12 +30,12 @@ function ShoppingComponent(props) {
 
   function loadingReset() {
     setDisplayData([]);
-    setSearchResult({});
+    setSearchResult({ shopping_results: [] });
     setPage(1);
   }
   async function fetchData(searchName, page = 1, num = 80, tbs = null) {
     let data = [];
-    if (searchName !== "" && locationInfos.length !== 0) {
+    if (searchName !== "") {
       try {
         setLoading(true);
         loadingReset();
@@ -43,32 +43,38 @@ function ShoppingComponent(props) {
           const countryCode = countryData.find(
             (el) => el.country_name === locationInfos[i].country
           ).country_code;
-
-          const response = await axios.get(
-            `${setting.backend}/shopping/${countryCode}/${
-              locationInfos[i].locationName
-            }/${searchName}?start=${(page - 1) * num}&num=${num}${
-              tbs !== null ? `&tbs=${tbs}` : ""
-            }`
-          );
-          let shopping_results = response.data.shopping_results.map((el) => {
-            return {
-              ...el,
-              usd_price: Number(
-                (
-                  el.extracted_price / locationInfos[i].currencyInfo.rate
-                ).toFixed(2)
-              ),
-              real_price:
-                el.extracted_price.toString() +
-                " " +
-                locationInfos[i].currencyInfo.name,
-              locationInfo: i + 1,
-            };
-          });
-          data = [...data, ...shopping_results];
+          let response;
+          try {
+            response = await axios.get(
+              `${setting.backend}/shopping/${countryCode}/${
+                locationInfos[i].locationName
+              }/${searchName}?start=${(page - 1) * num}&num=${num}${
+                tbs !== null ? `&tbs=${tbs}` : ""
+              }`
+            );
+            let shopping_results = response.data.shopping_results.map((el) => {
+              return {
+                ...el,
+                usd_price: Number(
+                  (
+                    el.extracted_price / locationInfos[i].currencyInfo.rate
+                  ).toFixed(2)
+                ),
+                real_price:
+                  el.extracted_price.toString() +
+                  " " +
+                  locationInfos[i].currencyInfo.name,
+                locationInfo: i + 1,
+              };
+            });
+            data = [...data, ...shopping_results];
+          } catch (error) {
+            console.log(error.response.data);
+            alert(error.response.data.error);
+          } finally {
+            setSearchResult({ shopping_results: data });
+          }
         }
-        setSearchResult({ shopping_results: data });
       } catch (error) {
         console.log(error);
         loadingReset();
@@ -347,7 +353,7 @@ function ShoppingComponent(props) {
         </Col>
       </Row>
     );
-  }, [displayData, locationInfos]);
+  }, [displayData]);
   return (
     <div>
       <Row className="align-items-center">
