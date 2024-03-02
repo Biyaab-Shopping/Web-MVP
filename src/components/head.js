@@ -5,7 +5,10 @@ function Head(props) {
   };
   return (
     <div className="row justify-content-start py-2">
-      <div onClick={modalOpen}>
+      <div
+        onClick={modalOpen}
+        style={{ width: "fit-content", cursor: "pointer" }}
+      >
         <img
           src={search_icon}
           width={50}

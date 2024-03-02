@@ -12,19 +12,23 @@ import SetLocationComponent from "./components/setLocation";
 import "bootstrap/dist/css/bootstrap.css";
 import "./App.css";
 
+import mapIcon from "./assests/map.png";
+
 import * as setting from "./config";
 
 function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [rateData, setRateData] = useState({});
-  const [locationInfo, setLocationInfo] = useState({
-    locationName: "",
-    currencyInfo: {
-      rate: "",
-      name: "",
-      symbol: "",
-    },
-  });
+  const [locationInfos, setLocationInfos] = useState([
+    //   {
+    //   locationName: "",
+    //   currencyInfo: {
+    //     rate: "",
+    //     name: "",
+    //     symbol: "",
+    //   },
+    // }
+  ]);
 
   const [mapConfig, setMapConfig] = useState({
     // center: {},
@@ -63,7 +67,10 @@ function App() {
     <div className="App">
       <Container>
         <Head modalOpen={modalOpenToggle}></Head>
-        <Shopping locationInfo={locationInfo}></Shopping>
+        <Shopping
+          locationInfos={locationInfos}
+          setLocationInfos={setLocationInfos}
+        ></Shopping>
       </Container>
       <Modal
         show={modalOpen}
@@ -71,6 +78,9 @@ function App() {
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
       >
+        <Modal.Header closeButton>
+          <img src={mapIcon} width={50} alt="map"></img>
+        </Modal.Header>
         <Modal.Body>
           <SetLocationComponent
             mapConfig={mapConfig}
@@ -78,7 +88,8 @@ function App() {
             markers={markers}
             setMarkers={setMarkers}
             rateData={rateData}
-            setLocationInfo={setLocationInfo}
+            locationInfos={locationInfos}
+            setLocationInfos={setLocationInfos}
           />
         </Modal.Body>
       </Modal>

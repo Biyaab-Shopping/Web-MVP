@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import _ from "lodash";
 
-import { Row, Col, Pagination } from "react-bootstrap";
+import { Row, Col, Pagination, Dropdown } from "react-bootstrap";
 import ReactStars from "react-rating-stars-component";
 import SearchInput from "./search_input";
 
@@ -11,213 +11,343 @@ import map from "../assests/map.png";
 
 import * as setting from "../config";
 import countryData from "../google-countries.json";
+// import Carousel from "@moxy/react-carousel";
+
+import "@moxy/react-carousel/dist/styles.css";
 
 function ShoppingComponent(props) {
-  const { locationInfo } = props;
+  const sorters = ["price", "rating", "reviews", "source"];
+  const pageSizes = [20, 40, 60, 80];
+  const { locationInfos, setLocationInfos } = props;
   const [searchProduct, setSearchProduct] = useState("");
   const [searchResult, setSearchResult] = useState({});
+  const [displayData, setDisplayData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(pageSizes[0]);
+  const [pageCount, setPageCount] = useState(0);
+  const [sorter, setSorter] = useState(sorters[0]);
 
-  async function fetchData(searchName, page = 1, num = 60) {
-    if (searchName !== "" && locationInfo.locationName !== "") {
+  function loadingReset() {
+    setDisplayData([]);
+    setSearchResult({});
+    setPage(1);
+  }
+  async function fetchData(searchName, page = 1, num = 80, tbs = null) {
+    let data = [];
+    if (searchName !== "" && locationInfos.length !== 0) {
       try {
         setLoading(true);
-        console.log(countryData);
-        const countryInfo = countryData.find(
-          (el) => el.country_name === locationInfo.country
-        );
-        console.log(countryInfo);
-        const countryCode = countryInfo.country_code;
+        loadingReset();
+        for (let i = 0; i < locationInfos.length; i++) {
+          const countryCode = countryData.find(
+            (el) => el.country_name === locationInfos[i].country
+          ).country_code;
 
-        const response = await axios.get(
-          `${setting.backend}/shopping/${countryCode}/${
-            locationInfo.locationName
-          }/${searchName}?start=${(page - 1) * num}&num=${num}`
-        );
-        console.log(response.data);
-        setSearchResult(response.data);
+          const response = await axios.get(
+            `${setting.backend}/shopping/${countryCode}/${
+              locationInfos[i].locationName
+            }/${searchName}?start=${(page - 1) * num}&num=${num}${
+              tbs !== null ? `&tbs=${tbs}` : ""
+            }`
+          );
+          let shopping_results = response.data.shopping_results.map((el) => {
+            return {
+              ...el,
+              usd_price: Number(
+                (
+                  el.extracted_price / locationInfos[i].currencyInfo.rate
+                ).toFixed(2)
+              ),
+              real_price:
+                el.extracted_price.toString() +
+                " " +
+                locationInfos[i].currencyInfo.name,
+              locationInfo: i + 1,
+            };
+          });
+          data = [...data, ...shopping_results];
+        }
+        setSearchResult({ shopping_results: data });
       } catch (error) {
         console.log(error);
+        loadingReset();
       }
-      setLoading(false);
     }
   }
 
+  useEffect(() => {
+    fetchData(searchProduct);
+  }, [locationInfos]);
   const changeSearchProduct = (value) => {
     setSearchProduct(value);
     fetchData(value);
   };
 
-  const changePage = (page) => {
-    fetchData(searchProduct, page);
+  const displayDataChange = () => {
+    if (searchResult.shopping_results && loading) {
+      let data = [...searchResult.shopping_results];
+      if (sorter === "price") data = _.sortBy(data, "usd_price");
+      else {
+        data = _.sortBy(data, sorter);
+      }
+      setSearchResult({ shopping_results: data });
+    }
   };
 
   useEffect(() => {
-    console.log(searchProduct);
-  }, [searchProduct]);
+    displayDataChange();
+  }, [searchResult, sorter, displayDataChange]);
 
-  const locationPart =
-    locationInfo.locationName !== "" ? (
-      <div>
-        <div>location: {locationInfo.locationName}</div>
-        <div>{`currency: 1 USD-> ${locationInfo.currencyInfo.rate} ${locationInfo.currencyInfo.name}`}</div>
-        <div></div>
+  useEffect(() => {
+    if (searchResult.shopping_results) {
+      let data = [...searchResult.shopping_results];
+      data = data.slice((page - 1) * pageSize, page * pageSize);
+      setDisplayData([...data]);
+      setLoading(false);
+    }
+  }, [page, pageSize, searchResult]);
+
+  useEffect(() => {
+    if (searchResult.shopping_results) {
+      setPageCount(Math.ceil(searchResult.shopping_results.length / pageSize));
+      setPage(1);
+    }
+  }, [searchResult, pageSize]);
+
+  const onChangePage = (val) => {
+    setPage(val);
+  };
+  const onChangePageSize = (eventKey) => {
+    setPageSize(Number(eventKey));
+  };
+
+  const onChangeSorter = (val) => {
+    setLoading(true);
+    setSorter(val);
+  };
+
+  const removeLocationInfoItem = useCallback(
+    (index) => {
+      let data = [...locationInfos];
+      data.splice(index, 1);
+      setLocationInfos(data);
+    },
+    [setLocationInfos, locationInfos]
+  );
+
+  const locationPart = locationInfos.map((el, index) =>
+    el.locationName !== "" ? (
+      <div
+        className="d-flex align-items-center justify-content-around border-bottom"
+        key={index}
+      >
+        <div style={{ width: "20px", fontWeight: "bold" }}>{index + 1}.</div>
+        <div className="mb-1" style={{ width: "100%" }}>
+          <p style={{ margin: 0 }}>{el.locationName}</p>
+          <p
+            style={{ margin: 0 }}
+          >{`currency: 1 USD->${el.currencyInfo.rate} ${el.currencyInfo.name}`}</p>
+        </div>
+        <div className="float-right">
+          <div
+            className="h5"
+            style={{ cursor: "pointer" }}
+            onClick={() => removeLocationInfoItem(index)}
+          >
+            X
+          </div>
+        </div>
       </div>
     ) : (
       "Please choose the location!"
-    );
+    )
+  );
 
-  const productsPart = useMemo(() => {
-    const paginationPart = (pagination) => {
-      const pageCount =
-        _.keys(pagination.other_pages).length + (pagination.current ? 1 : 0);
-      let array = [];
-      for (let i = 0; i < pageCount; i++) {
-        array.push(i + 1);
-      }
-      let pageItems = array.map((el) => (
-        <Pagination.Item
-          disabled={pagination.current === el}
-          onClick={() => changePage(el)}
-        >
-          {el}
-        </Pagination.Item>
-      ));
-      return (
-        <div>
-          <Pagination>
+  const paginationPart = () => {
+    let array = [];
+    for (
+      let i =
+        pageCount > 5 ? Math.max(1, Math.min(page - 2, pageCount - 4)) : 1;
+      i <=
+      (pageCount > 5 ? Math.min(pageCount, Math.max(page + 2, 5)) : pageCount);
+      i++
+    ) {
+      array.push(i);
+    }
+    let pageItems = array.map((el, index) => (
+      <Pagination.Item
+        disabled={page === el}
+        onClick={() => onChangePage(el)}
+        key={index}
+      >
+        {el}
+      </Pagination.Item>
+    ));
+    return (
+      <div className="d-flex justify-content-between">
+        <div className="d-flex">
+          <Pagination className="">
             <Pagination.First
-              disabled={pagination.current === 1}
-              onClick={() => changePage(1)}
+              disabled={page === 1}
+              onClick={() => onChangePage(1)}
             ></Pagination.First>
             <Pagination.Prev
-              disabled={pagination.prev === undefined}
-              onClick={() => changePage(pagination.current - 1)}
+              disabled={page === 1}
+              onClick={() => onChangePage(page - 1)}
             ></Pagination.Prev>
+            {page > 3 && pageCount > 5 ? (
+              <Pagination.Item>...</Pagination.Item>
+            ) : null}
             {pageItems}
+            {page < pageCount - 2 && pageCount > 5 ? (
+              <Pagination.Item>...</Pagination.Item>
+            ) : null}
             <Pagination.Next
-              disabled={pagination.next === undefined}
-              onClick={() => changePage(pagination.current + 1)}
+              disabled={page === pageCount}
+              onClick={() => onChangePage(page + 1)}
             ></Pagination.Next>
             <Pagination.Last
-              disabled={pagination.current === pageCount}
-              onClick={() => changePage(pageCount)}
+              disabled={page === pageCount}
+              onClick={() => onChangePage(pageCount)}
             ></Pagination.Last>
           </Pagination>
+          <Dropdown onSelect={onChangePageSize} className="mx-2">
+            <Dropdown.Toggle
+              variant="success"
+              id="dropdown-basic"
+              className="d-flex align-items-center"
+              split={true}
+            >
+              <div style={{ width: "130px" }}>{pageSize}</div>
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              {pageSizes.map((el, index) => (
+                <Dropdown.Item key={index} eventKey={el}>
+                  {el}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
-      );
-    };
+        <div>
+          <Dropdown onSelect={onChangeSorter}>
+            <Dropdown.Toggle
+              className="d-flex align-items-center"
+              variant="success"
+              id="dropdown-basic"
+            >
+              <div style={{ width: "120px" }}>{sorter}</div>
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              {sorters.map((el, index) => (
+                <Dropdown.Item key={index} eventKey={el}>
+                  {el}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+      </div>
+    );
+  };
+  const productsPart = useMemo(() => {
     return (
       <Row>
-        {/* <Col md={3}></Col> */}
-        <Col md={12}>
-          {searchResult.pagination
-            ? paginationPart(searchResult.pagination)
-            : null}
+        <Col md={3}></Col>
+        <Col md={9}>
+          {pageCount > 0 ? paginationPart() : null}
           <Row className="justify-content-between">
-            {searchResult.shopping_results &&
-              searchResult.shopping_results.map((ele) => {
-                return (
-                  <Col md={3} className="mb-2 pr-2">
-                    <div
-                      className="border d-flex flex-column justify-content-between"
-                      style={{ height: "100%" }}
-                    >
-                      <div
-                        className="border-bottom p-2"
-                        style={{ height: "100%" }}
-                      >
-                        <div className="d-flex justify-content-center">
-                          <a href={ele.product_link}>
-                            <img
-                              src={ele.thumbnail}
-                              alt={ele.title}
-                              style={{ maxWidth: "100%", maxHeight: "100px" }}
-                            ></img>
-                          </a>
-                        </div>
-                        <div className="product_title">{ele.title}</div>
-                        <div className="d-flex align-items-center">
-                          <span
-                            className="mt-1"
-                            style={{ marginRight: "10px" }}
-                          >
-                            {ele.rating}
-                          </span>
-                          <ReactStars
-                            edit={false}
-                            value={Math.round(ele.rating)}
-                            count={5}
-                            // onChange={ratingChanged}
-                            size={24}
-                            activeColor="#ffd700"
-                          />
-                          <span className="mt-1" style={{ marginLeft: "10px" }}>
-                            {ele.reviews}
-                          </span>
-                        </div>
-                        <div
-                          className="font-weight-bold"
-                          style={{ fontWeight: "bold" }}
-                        >
-                          {`price: ${locationInfo.currencyInfo.symbol}
-                      ${ele.extracted_price} -> $
-                      ${(
-                        ele.extracted_price / locationInfo.currencyInfo.rate
-                      ).toFixed(2)}`}
-                        </div>
-                      </div>
-                      <div className="my-1 px-2" style={{ height: "100%" }}>
-                        <a href={ele.link} style={{ textDecoration: "none" }}>
-                          {ele.source}
-                        </a>
-                        <br />
-                        <p>{ele.delivery}</p>
-                        {ele.store_rating ? (
-                          <div className="d-flex">
-                            <span
-                              className="mt-2"
-                              style={{ marginRight: "10px" }}
-                            >
-                              {ele.store_rating}/5
-                            </span>
-                            <ReactStars
-                              value={1}
-                              count={1}
-                              size={24}
-                              activeColor="#ffd700"
-                            ></ReactStars>
-                            <span
-                              className="mt-2"
-                              style={{ marginLeft: "10px" }}
-                            >
-                              {ele.store_reviews}
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-                      {ele.number_of_comparisons ? (
-                        <div className="border-top px-2">
-                          <a
-                            className="py-1"
-                            href={ele.comparison_link}
-                            style={{ textDecoration: "none" }}
-                          >
-                            Compares prices from {ele.number_of_comparisons}
-                            stores
-                          </a>
-                        </div>
-                      ) : null}
+            {displayData.map((ele, index) => (
+              <Col md={3} key={index} className="mb-2 pr-2">
+                <div
+                  className="border d-flex flex-column justify-content-between"
+                  style={{ height: "100%" }}
+                >
+                  <div className="border-bottom p-2">
+                    location: {ele.locationInfo}
+                  </div>
+                  <div className="border-bottom p-2" style={{ height: "100%" }}>
+                    <div className="d-flex justify-content-center">
+                      <a href={ele.product_link}>
+                        <img
+                          src={ele.thumbnail}
+                          alt={ele.title}
+                          style={{ maxWidth: "100%", maxHeight: "100px" }}
+                        ></img>
+                      </a>
                     </div>
-                  </Col>
-                );
-              })}
+                    <div className="product_title">{ele.title}</div>
+                    <div className="d-flex align-items-center">
+                      <span className="mt-1" style={{ marginRight: "10px" }}>
+                        {ele.rating}
+                      </span>
+                      {ele.rating && (
+                        <ReactStars
+                          edit={false}
+                          value={Math.round(ele.rating)}
+                          count={5}
+                          // onChange={ratingChanged}
+                          size={24}
+                          activeColor="#ffd700"
+                        />
+                      )}
+                      <span className="mt-1" style={{ marginLeft: "10px" }}>
+                        {ele.reviews}
+                      </span>
+                    </div>
+                    <div
+                      className="font-weight-bold"
+                      style={{ fontWeight: "bold" }}
+                    >
+                      {`price:${ele.real_price} -> ${ele.usd_price} USD`}
+                    </div>
+                  </div>
+                  <div className="my-1 px-2" style={{ height: "100%" }}>
+                    <a href={ele.link} style={{ textDecoration: "none" }}>
+                      {ele.source}
+                    </a>
+                    <br />
+                    <p>{ele.delivery}</p>
+                    {ele.store_rating ? (
+                      <div className="d-flex">
+                        <span className="mt-2" style={{ marginRight: "10px" }}>
+                          {ele.store_rating}/5
+                        </span>
+                        <ReactStars
+                          value={1}
+                          count={1}
+                          size={24}
+                          activeColor="#ffd700"
+                        />
+                        <span className="mt-2" style={{ marginLeft: "10px" }}>
+                          {ele.store_reviews}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {ele.number_of_comparisons ? (
+                    <div className="border-top px-2">
+                      <a
+                        className="py-1"
+                        href={ele.comparison_link}
+                        style={{ textDecoration: "none" }}
+                      >
+                        Compares prices from {ele.number_of_comparisons}
+                        stores
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              </Col>
+            ))}
           </Row>
         </Col>
       </Row>
     );
-  }, [searchResult, locationInfo.currencyInfo]);
+  }, [displayData, locationInfos]);
   return (
     <div>
       <Row className="align-items-center">
@@ -270,3 +400,77 @@ function ShoppingComponent(props) {
 }
 
 export default ShoppingComponent;
+
+{
+  /* {searchResult.categories?.map((category) => (
+            <div className="mt-2">
+              <div className="h5">{category.title}</div>
+              <div className="mt-2">
+                <Carousel
+                  swapOnDragMoveEnd={true}
+                  arrows={category.filters.length >= 6}
+                  renderArrows={({ previous, next }) => (
+                    <>
+                      <button
+                        className="rc-arrow -left arrow"
+                        onClick={previous}
+                      >
+                        <svg
+                          focusable="false"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
+                        </svg>
+                      </button>
+                      <button className="rc-arrow -right arrow" onClick={next}>
+                        <svg
+                          focusable="false"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path>
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  autoplayDirection
+                  carouselClassName="overflow-x-hidden"
+                >
+                  {category.filters?.map((el) => (
+                    <div
+                      className="mr-2"
+                      style={{ height: "100%", marginRight: "10px" }}
+                    >
+                      <a
+                        href={el.link}
+                        style={{ textDecoration: "none", fontColor: "#202124" }}
+                      >
+                        <div
+                          className="border border-rounded d-flex flex-column justify-content-between"
+                          style={{ height: "100%" }}
+                        >
+                          <div
+                            className="p-2"
+                            style={{ background: "#e1e1e1", height: "100%" }}
+                          >
+                            <img
+                              src={el.thumbnail}
+                              alt={el.title}
+                              style={{ maxWidth: "100%" }}
+                            ></img>
+                          </div>
+                          <div className="d-flex justify-content-center p-2">
+                            <span style={{ textDecoration: "none" }}>
+                              {el.title}
+                            </span>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  ))}
+                </Carousel>
+              </div>
+            </div>
+          ))} */
+}

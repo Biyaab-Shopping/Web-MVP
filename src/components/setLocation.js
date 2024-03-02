@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapComponent from "./googl_map";
 import SearchInput from "./search_input";
 import { Button, Col, Row } from "react-bootstrap";
@@ -8,7 +8,8 @@ import * as setting from "../config";
 function SetLocationComponent(props) {
   const {
     rateData,
-    setLocationInfo,
+    locationInfos,
+    setLocationInfos,
     mapConfig,
     setMapConfig,
     markers,
@@ -190,17 +191,55 @@ function SetLocationComponent(props) {
 
   const setLocationCheck = () => {
     if (pointLocationName !== "") {
-      setLocationInfo({
-        country: country,
-        locationName: pointLocationName,
-        currencyInfo: {
-          rate: rateData[currency.name],
-          name: currency.name,
-          symbol: currency.symbol,
+      setLocationInfos([
+        ...locationInfos,
+        {
+          country: country,
+          locationName: pointLocationName,
+          currencyInfo: {
+            rate: rateData[currency.name],
+            name: currency.name,
+            symbol: currency.symbol,
+          },
         },
-      });
+      ]);
     }
   };
+
+  const removeLocationInfoItem = useCallback(
+    (index) => {
+      let data = [...locationInfos];
+      data.splice(index, 1);
+      setLocationInfos(data);
+    },
+    [setLocationInfos, locationInfos]
+  );
+
+  const locationInfosPart = useMemo(() => {
+    return locationInfos.map((el, index) => (
+      <div
+        className="d-flex align-items-center justify-content-around border-bottom"
+        key={index}
+      >
+        <div style={{ width: "20px", fontWeight: "bold" }}>{index + 1}.</div>
+        <div className="mb-1" style={{ width: "100%" }}>
+          <p style={{ margin: 0 }}>{el.locationName}</p>
+          <p
+            style={{ margin: 0 }}
+          >{`currency: 1 USD->${el.currencyInfo.rate} ${el.currencyInfo.name}`}</p>
+        </div>
+        <div className="float-right">
+          <div
+            className="h5"
+            style={{ cursor: "pointer" }}
+            onClick={() => removeLocationInfoItem(index)}
+          >
+            X
+          </div>
+        </div>
+      </div>
+    ));
+  }, [locationInfos, removeLocationInfoItem]);
 
   return (
     <div>
@@ -281,6 +320,7 @@ function SetLocationComponent(props) {
           </div>
         </Col>
       </Row>
+      <div className="mt-2">{locationInfosPart}</div>
     </div>
   );
 }

@@ -40,3 +40,23 @@ a[aria-label="Open this area in Google Maps (opens a new window)"] {
   font-size: 15x;
   font-weight: 600;
 }
+
+.arrow-container {
+  height: 100%;
+  /* background-color: grey; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 3rem;
+  width: 3rem;
+  border-width: thin;
+  border-radius: 50%;
+  margin-left: -40px;
+  margin-right: -40px;
+}
