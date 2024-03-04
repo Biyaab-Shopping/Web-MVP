@@ -85,6 +85,7 @@ function MapContainer(props) {
         onClick={mapClicked}
         // centerAroundCurrentLocation={true}
       >
+        {/* <Marker name={"current location"} /> */}
         {Markers}
       </Map>
     </>

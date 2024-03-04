@@ -16,7 +16,7 @@ import countryData from "../google-countries.json";
 import "@moxy/react-carousel/dist/styles.css";
 
 function ShoppingComponent(props) {
-  const sorters = ["price", "rating", "reviews", "source"];
+  const sorterBys = ["price", "rating", "reviews", "source"];
   const pageSizes = [20, 40, 60, 80];
   const { locationInfos, setLocationInfos } = props;
   const [searchProduct, setSearchProduct] = useState("");
@@ -26,7 +26,8 @@ function ShoppingComponent(props) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(pageSizes[0]);
   const [pageCount, setPageCount] = useState(0);
-  const [sorter, setSorter] = useState(sorters[0]);
+  const [sorterBy, setSorterBy] = useState(sorterBys[0]);
+  const [sorter, setSorter] = useState(true);
 
   function loadingReset() {
     setDisplayData([]);
@@ -76,9 +77,9 @@ function ShoppingComponent(props) {
       } catch (error) {
         console.log(error);
       } finally {
-        if (sorter === "price") data = _.sortBy(data, "usd_price");
+        if (sorterBy === "price") data = _.sortBy(data, "usd_price");
         else {
-          data = _.sortBy(data, sorter);
+          data = _.sortBy(data, sorterBy);
         }
         setSearchResult({ shopping_results: data });
         setLoading(false);
@@ -89,25 +90,37 @@ function ShoppingComponent(props) {
   useEffect(() => {
     fetchData(searchProduct);
   }, [locationInfos]);
+
   const changeSearchProduct = (value) => {
     setSearchProduct(value);
-    fetchData(value);
+    if (locationInfos.length > 0) {
+      fetchData(value);
+    } else {
+      alert("Please Choose Minimum One Location From the Filter Icon");
+    }
   };
 
-  const sorterByFunc = () => {
+  const sorterByByFunc = () => {
     if (searchResult.shopping_results) {
       let data = [...searchResult.shopping_results];
-      if (sorter === "price") data = _.sortBy(data, "usd_price");
-      else {
-        data = _.sortBy(data, sorter);
+      if (sorterBy === "price") {
+        data = data.sort((a, b) =>
+          sorter ? a.usd_price - b.usd_price : b.usd_price - a.usd_price
+        );
+        // data = _.sortBy(data, "usd_price");
+      } else {
+        data = data.sort((a, b) =>
+          sorter ? a[sorterBy] - b[sorterBy] : b[sorterBy] - a[sorterBy]
+        );
+        // data = _.sortBy(data, sorterBy);
       }
       setSearchResult({ shopping_results: data });
     }
   };
 
   useEffect(() => {
-    sorterByFunc();
-  }, [sorter]);
+    sorterByByFunc();
+  }, [sorterBy, sorter]);
 
   useEffect(() => {
     if (searchResult.shopping_results) {
@@ -131,8 +144,8 @@ function ShoppingComponent(props) {
     setPageSize(Number(eventKey));
   };
 
-  const onChangeSorter = (val) => {
-    setSorter(val);
+  const onChangeSorterBy = (val) => {
+    setSorterBy(val);
   };
 
   const removeLocationInfoItem = useCallback(
@@ -172,6 +185,10 @@ function ShoppingComponent(props) {
     )
   );
 
+  const onChangeSorter = () => {
+    const val = !sorter;
+    setSorter(val);
+  };
   const paginationPart = () => {
     let array = [];
     for (
@@ -239,18 +256,29 @@ function ShoppingComponent(props) {
             </Dropdown.Menu>
           </Dropdown>
         </div>
-        <div className="mt-2 mt-md-0">
-          <Dropdown onSelect={onChangeSorter}>
+        <div className="mt-2 mt-md-0 d-flex align-items-center">
+          <div
+            className="border p-2 px-3 rounded"
+            onClick={onChangeSorter}
+            style={{
+              marginRight: "10px",
+              cursor: "pointer",
+              boxShadow: "3px 3px 3px -3px",
+            }}
+          >
+            {sorter ? "ASC" : "DESC"}
+          </div>
+          <Dropdown onSelect={onChangeSorterBy}>
             <Dropdown.Toggle
               className="d-flex align-items-center"
               variant="success"
               id="dropdown-basic"
             >
-              <div style={{ width: "120px" }}>{sorter}</div>
+              <div style={{ width: "120px" }}>Sort by "{sorterBy}"</div>
             </Dropdown.Toggle>
 
             <Dropdown.Menu>
-              {sorters.map((el, index) => (
+              {sorterBys.map((el, index) => (
                 <Dropdown.Item key={index} eventKey={el}>
                   {el}
                 </Dropdown.Item>
@@ -261,6 +289,7 @@ function ShoppingComponent(props) {
       </div>
     );
   };
+
   const productsPart = useMemo(() => {
     return (
       <Row>
@@ -352,6 +381,7 @@ function ShoppingComponent(props) {
               </Col>
             ))}
           </Row>
+          {pageCount > 0 ? paginationPart() : null}
         </Col>
       </Row>
     );
