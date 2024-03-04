@@ -37,8 +37,8 @@ function ShoppingComponent(props) {
     let data = [];
     if (searchName !== "") {
       try {
-        setLoading(true);
         loadingReset();
+        setLoading(true);
         for (let i = 0; i < locationInfos.length; i++) {
           const countryCode = countryData.find(
             (el) => el.country_name === locationInfos[i].country
@@ -71,13 +71,17 @@ function ShoppingComponent(props) {
           } catch (error) {
             console.log(error.response.data);
             alert(error.response.data.error);
-          } finally {
-            setSearchResult({ shopping_results: data });
           }
         }
       } catch (error) {
         console.log(error);
-        loadingReset();
+      } finally {
+        if (sorter === "price") data = _.sortBy(data, "usd_price");
+        else {
+          data = _.sortBy(data, sorter);
+        }
+        setSearchResult({ shopping_results: data });
+        setLoading(false);
       }
     }
   }
@@ -90,8 +94,8 @@ function ShoppingComponent(props) {
     fetchData(value);
   };
 
-  const displayDataChange = () => {
-    if (searchResult.shopping_results && loading) {
+  const sorterByFunc = () => {
+    if (searchResult.shopping_results) {
       let data = [...searchResult.shopping_results];
       if (sorter === "price") data = _.sortBy(data, "usd_price");
       else {
@@ -102,15 +106,14 @@ function ShoppingComponent(props) {
   };
 
   useEffect(() => {
-    displayDataChange();
-  }, [searchResult, sorter, displayDataChange]);
+    sorterByFunc();
+  }, [sorter]);
 
   useEffect(() => {
     if (searchResult.shopping_results) {
       let data = [...searchResult.shopping_results];
       data = data.slice((page - 1) * pageSize, page * pageSize);
       setDisplayData([...data]);
-      setLoading(false);
     }
   }, [page, pageSize, searchResult]);
 
@@ -129,7 +132,6 @@ function ShoppingComponent(props) {
   };
 
   const onChangeSorter = (val) => {
-    setLoading(true);
     setSorter(val);
   };
 
@@ -191,8 +193,8 @@ function ShoppingComponent(props) {
       </Pagination.Item>
     ));
     return (
-      <div className="d-flex justify-content-between">
-        <div className="d-flex">
+      <div className="d-md-flex justify-content-between mt-2">
+        <div className="d-md-flex mt-md-0 mt-2">
           <Pagination className="">
             <Pagination.First
               disabled={page === 1}
@@ -218,7 +220,7 @@ function ShoppingComponent(props) {
               onClick={() => onChangePage(pageCount)}
             ></Pagination.Last>
           </Pagination>
-          <Dropdown onSelect={onChangePageSize} className="mx-2">
+          <Dropdown onSelect={onChangePageSize} className="mx-md-2">
             <Dropdown.Toggle
               variant="success"
               id="dropdown-basic"
@@ -237,7 +239,7 @@ function ShoppingComponent(props) {
             </Dropdown.Menu>
           </Dropdown>
         </div>
-        <div>
+        <div className="mt-2 mt-md-0">
           <Dropdown onSelect={onChangeSorter}>
             <Dropdown.Toggle
               className="d-flex align-items-center"
@@ -262,12 +264,12 @@ function ShoppingComponent(props) {
   const productsPart = useMemo(() => {
     return (
       <Row>
-        <Col md={3}></Col>
-        <Col md={9}>
+        {/* <Col md={3}></Col> */}
+        <Col md={12}>
           {pageCount > 0 ? paginationPart() : null}
           <Row className="justify-content-between">
             {displayData.map((ele, index) => (
-              <Col md={3} key={index} className="mb-2 pr-2">
+              <Col md={3} sm={6} key={index} className="mb-2 pr-2">
                 <div
                   className="border d-flex flex-column justify-content-between"
                   style={{ height: "100%" }}
