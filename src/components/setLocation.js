@@ -339,7 +339,7 @@ function SetLocationComponent(props) {
                   fill="#000000"
                   style={{ marginRight: "10px" }}
                 >
-                  <g id="SVGRepo_bgCarrier" stroke-width="0" />
+                  <g id="SVGRepo_bgCarrier" strokeWidth="0" />
 
                   <g
                     id="SVGRepo_tracerCarrier"
@@ -386,7 +386,7 @@ function SetLocationComponent(props) {
                               <circle
                                 id="Oval"
                                 fill="#adadad"
-                                fill-rule="nonzero"
+                                fillRule="nonzero"
                                 cx="14"
                                 cy="14"
                                 r="7"
