@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import MapComponent from "./googl_map";
 import SearchInput from "./search_input";
-import {} from "google-maps-react";
 
 import * as setting from "../config";
 

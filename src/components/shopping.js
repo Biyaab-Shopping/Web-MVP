@@ -89,6 +89,7 @@ function ShoppingComponent(props) {
 
   useEffect(() => {
     fetchData(searchProduct);
+    // eslint-disable-next-line
   }, [locationInfos]);
 
   const changeSearchProduct = (value) => {
@@ -120,6 +121,7 @@ function ShoppingComponent(props) {
 
   useEffect(() => {
     sorterByByFunc();
+    // eslint-disable-next-line
   }, [sorterBy, sorter]);
 
   useEffect(() => {
@@ -385,6 +387,7 @@ function ShoppingComponent(props) {
         </Col>
       </Row>
     );
+    // eslint-disable-next-line
   }, [displayData]);
   return (
     <div>
@@ -439,8 +442,7 @@ function ShoppingComponent(props) {
 
 export default ShoppingComponent;
 
-{
-  /* {searchResult.categories?.map((category) => (
+/* {searchResult.categories?.map((category) => (
             <div className="mt-2">
               <div className="h5">{category.title}</div>
               <div className="mt-2">
@@ -511,4 +513,3 @@ export default ShoppingComponent;
               </div>
             </div>
           ))} */
-}

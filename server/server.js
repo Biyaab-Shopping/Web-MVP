@@ -2,12 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 var axios = require("axios");
+const createUule = require("create-uule");
 require("dotenv").config();
 
 app.use(cors());
 
 app.get("/api/shopping/:country/:location/:product", (req, res) => {
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${req.params.product}&location=${req.params.location}&hl=en&gl=${req.params.country}&api_key=${process.env.SerpApiKey}&start=${req.query.start}&num=${req.query.num}`;
+  const uule = createUule(req.params.location);
+  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${req.params.product}&uule=${uule}&hl=en&gl=${req.params.country}&api_key=${process.env.SerpApiKey}&start=${req.query.start}&num=${req.query.num}`;
   console.log(url);
   axios({
     method: "get",

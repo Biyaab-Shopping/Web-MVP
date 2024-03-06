@@ -3550,6 +3550,11 @@ cosmiconfig@^7.0.0:
     path-type "^4.0.0"
     yaml "^1.10.0"
 
+create-uule@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/create-uule/-/create-uule-1.0.3.tgz#066a30f57e1a8aa55114f716c603577206dde7a5"
+  integrity sha512-TTLirZEyNwuiU0yXg7Ia+kk2oycyueEjV29iJtN/bho5p0XM/mg/r5mirNRIt0USnx4Do2q/EZSTGPWFygQyAA==
+
 cross-spawn@^7.0.0, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/cross-spawn/-/cross-spawn-7.0.3.tgz#f73a85b9d5d41d045551c177e2882d4ac85728a6"
