@@ -343,8 +343,8 @@ function SetLocationComponent(props) {
 
                   <g
                     id="SVGRepo_tracerCarrier"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
                   />
 
                   <g id="SVGRepo_iconCarrier">
@@ -354,9 +354,9 @@ function SetLocationComponent(props) {
                     <g
                       id="Vivid.JS"
                       stroke="none"
-                      stroke-width="1"
+                      strokeWidth={"1"}
                       fill="none"
-                      fill-rule="evenodd"
+                      fillRule="evenodd"
                     >
                       {" "}
                       <g

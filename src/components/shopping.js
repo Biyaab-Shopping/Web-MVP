@@ -80,7 +80,7 @@ function ShoppingComponent(props) {
       } finally {
         setSearchResult({ shopping_results: data });
         setTimeout(() => {
-          sorterByFunc();
+          sorterByFunc(data);
           setLoading(false);
         }, 150);
       }
@@ -153,9 +153,9 @@ function ShoppingComponent(props) {
     }
   }, [searchResult, pageSize]);
 
-  const sorterByFunc = () => {
-    if (searchResult.shopping_results) {
-      let data = [...searchResult.shopping_results];
+  const sorterByFunc = (data1 = searchResult.shopping_results) => {
+    if (data1) {
+      let data = [...data1];
       if (sorterBy === "price") {
         data = data.sort((a, b) =>
           sorter ? a.usd_price - b.usd_price : b.usd_price - a.usd_price
