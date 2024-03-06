@@ -41,8 +41,8 @@ function ShoppingComponent(props) {
         loadingReset();
         setLoading(true);
         for (let i = 0; i < locationInfos.length; i++) {
-          const countryCode = countryData.find(
-            (el) => el.country_name === locationInfos[i].country
+          const countryCode = countryData.find((el) =>
+            el.country_name.includes(locationInfos[i].country)
           ).country_code;
           let response;
           try {
