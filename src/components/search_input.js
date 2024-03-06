@@ -2,6 +2,7 @@ import { Form, InputGroup } from "react-bootstrap";
 import ZoomIcon from "../assests/zoom_icon.png";
 import { useEffect, useState } from "react";
 function Search_Input(props) {
+  const { name } = props;
   const [searchValue, setSearchValue] = useState(props.searchValue);
   useEffect(() => {
     setSearchValue(props.searchValue);
@@ -18,6 +19,7 @@ function Search_Input(props) {
     <div className="search_input py-2 px-1">
       <InputGroup className="">
         <Form.Control
+          name={name | "input"}
           className="border-0 bg-white rounded shadow-none"
           placeholder={props.placeholder || "Search"}
           aria-label={props.placeholder || "Search"}

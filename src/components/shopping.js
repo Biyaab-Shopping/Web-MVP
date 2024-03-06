@@ -13,7 +13,7 @@ import * as setting from "../config";
 import countryData from "../google-countries.json";
 // import Carousel from "@moxy/react-carousel";
 
-import "@moxy/react-carousel/dist/styles.css";
+// import "@moxy/react-carousel/dist/styles.css";
 
 function ShoppingComponent(props) {
   const sorterBys = ["price", "rating", "reviews", "source"];
@@ -56,6 +56,7 @@ function ShoppingComponent(props) {
             let shopping_results = response.data.shopping_results.map((el) => {
               return {
                 ...el,
+                rating: el.rating ? el.rating : 0,
                 usd_price: Number(
                   (
                     el.extracted_price / locationInfos[i].currencyInfo.rate
@@ -77,12 +78,11 @@ function ShoppingComponent(props) {
       } catch (error) {
         console.log(error);
       } finally {
-        if (sorterBy === "price") data = _.sortBy(data, "usd_price");
-        else {
-          data = _.sortBy(data, sorterBy);
-        }
         setSearchResult({ shopping_results: data });
-        setLoading(false);
+        setTimeout(() => {
+          sorterByFunc();
+          setLoading(false);
+        }, 150);
       }
     }
   }
@@ -99,55 +99,6 @@ function ShoppingComponent(props) {
     } else {
       alert("Please Choose Minimum One Location From the Filter Icon");
     }
-  };
-
-  const sorterByByFunc = () => {
-    if (searchResult.shopping_results) {
-      let data = [...searchResult.shopping_results];
-      if (sorterBy === "price") {
-        data = data.sort((a, b) =>
-          sorter ? a.usd_price - b.usd_price : b.usd_price - a.usd_price
-        );
-        // data = _.sortBy(data, "usd_price");
-      } else {
-        data = data.sort((a, b) =>
-          sorter ? a[sorterBy] - b[sorterBy] : b[sorterBy] - a[sorterBy]
-        );
-        // data = _.sortBy(data, sorterBy);
-      }
-      setSearchResult({ shopping_results: data });
-    }
-  };
-
-  useEffect(() => {
-    sorterByByFunc();
-    // eslint-disable-next-line
-  }, [sorterBy, sorter]);
-
-  useEffect(() => {
-    if (searchResult.shopping_results) {
-      let data = [...searchResult.shopping_results];
-      data = data.slice((page - 1) * pageSize, page * pageSize);
-      setDisplayData([...data]);
-    }
-  }, [page, pageSize, searchResult]);
-
-  useEffect(() => {
-    if (searchResult.shopping_results) {
-      setPageCount(Math.ceil(searchResult.shopping_results.length / pageSize));
-      setPage(1);
-    }
-  }, [searchResult, pageSize]);
-
-  const onChangePage = (val) => {
-    setPage(val);
-  };
-  const onChangePageSize = (eventKey) => {
-    setPageSize(Number(eventKey));
-  };
-
-  const onChangeSorterBy = (val) => {
-    setSorterBy(val);
   };
 
   const removeLocationInfoItem = useCallback(
@@ -187,10 +138,62 @@ function ShoppingComponent(props) {
     )
   );
 
+  useEffect(() => {
+    if (searchResult.shopping_results) {
+      let data = [...searchResult.shopping_results];
+      data = data.slice((page - 1) * pageSize, page * pageSize);
+      setDisplayData([...data]);
+    }
+  }, [page, pageSize, searchResult]);
+
+  useEffect(() => {
+    if (searchResult.shopping_results) {
+      setPageCount(Math.ceil(searchResult.shopping_results.length / pageSize));
+      setPage(1);
+    }
+  }, [searchResult, pageSize]);
+
+  const sorterByFunc = () => {
+    if (searchResult.shopping_results) {
+      let data = [...searchResult.shopping_results];
+      if (sorterBy === "price") {
+        data = data.sort((a, b) =>
+          sorter ? a.usd_price - b.usd_price : b.usd_price - a.usd_price
+        );
+        // data = _.sortBy(data, "usd_price");
+      } else {
+        // data = data.sort((a, b) =>
+        //   sorter ? a[sorterBy] - b[sorterBy] : b[sorterBy] - a[sorterBy]
+        // );
+        data = sorter
+          ? _.sortBy(data, sorterBy)
+          : _.reverse(_.sortBy(data, sorterBy));
+      }
+      setSearchResult({ shopping_results: data });
+    }
+  };
+
+  useEffect(() => {
+    sorterByFunc();
+    // eslint-disable-next-line
+  }, [sorterBy, sorter]);
+
+  const onChangePage = (val) => {
+    setPage(val);
+  };
+  const onChangePageSize = (eventKey) => {
+    setPageSize(Number(eventKey));
+  };
+
+  const onChangeSorterBy = (val) => {
+    setSorterBy(val);
+  };
+
   const onChangeSorter = () => {
     const val = !sorter;
     setSorter(val);
   };
+
   const paginationPart = () => {
     let array = [];
     for (
@@ -206,7 +209,7 @@ function ShoppingComponent(props) {
       <Pagination.Item
         disabled={page === el}
         onClick={() => onChangePage(el)}
-        key={index}
+        key={el}
       >
         {el}
       </Pagination.Item>
@@ -250,8 +253,8 @@ function ShoppingComponent(props) {
             </Dropdown.Toggle>
 
             <Dropdown.Menu>
-              {pageSizes.map((el, index) => (
-                <Dropdown.Item key={index} eventKey={el}>
+              {pageSizes.map((el) => (
+                <Dropdown.Item key={el} eventKey={el}>
                   {el}
                 </Dropdown.Item>
               ))}
@@ -280,8 +283,8 @@ function ShoppingComponent(props) {
             </Dropdown.Toggle>
 
             <Dropdown.Menu>
-              {sorterBys.map((el, index) => (
-                <Dropdown.Item key={index} eventKey={el}>
+              {sorterBys.map((el) => (
+                <Dropdown.Item key={el} eventKey={el}>
                   {el}
                 </Dropdown.Item>
               ))}
@@ -291,6 +294,18 @@ function ShoppingComponent(props) {
       </div>
     );
   };
+  // eslint-disable-next-line
+  // }, [
+  //   pageCount,
+  //   page,
+  //   pageSize,
+  //   sorter,
+  //   sorterBy,
+  //   // onChangeSorterBy,
+  //   // onChangeSorter,
+  //   sorterBys,
+  //   pageSizes,
+  // ]);
 
   const productsPart = useMemo(() => {
     return (
