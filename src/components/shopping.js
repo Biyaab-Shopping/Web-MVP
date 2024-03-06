@@ -53,6 +53,7 @@ function ShoppingComponent(props) {
                 tbs !== null ? `&tbs=${tbs}` : ""
               }`
             );
+            if (response.data.error) throw response.data.error;
             let shopping_results = response.data.shopping_results.map((el) => {
               return {
                 ...el,
@@ -71,8 +72,11 @@ function ShoppingComponent(props) {
             });
             data = [...data, ...shopping_results];
           } catch (error) {
-            console.log(error.response.data);
-            alert(error.response.data.error);
+            const errorMessage = error.response
+              ? error.response.data.error
+              : `Google doesn't support "${locationInfos[i].locationName}".`;
+            console.log(errorMessage);
+            alert(errorMessage);
           }
         }
       } catch (error) {
