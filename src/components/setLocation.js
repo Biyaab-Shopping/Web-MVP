@@ -111,6 +111,9 @@ function SetLocationComponent(props) {
     async function fetchData() {
       if (mounted === true) {
         try {
+          setCountry("");
+          setPointLocationName("");
+          setCurrency({ name: "", symbol: "" });
           const response = await axios.get(
             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${markers[0].lat},${markers[0].lng}&key=${setting.apiKey}`
           );
@@ -147,11 +150,12 @@ function SetLocationComponent(props) {
             }
 
             // const pointName = response.data.results[0].formatted_address;
-            setCountry(country);
+            // setCountry(country);
             setPointLocationName(pointName);
             await currecyFunc(country);
           } else {
-            setCountry("");
+            // setCountry("");
+            // setPointLocationName("");
           }
         } catch (error) {
           console.error(
@@ -159,7 +163,7 @@ function SetLocationComponent(props) {
             error
           );
           setCountry("Please select the correct point!");
-          setPointLocationName("");
+          // setPointLocationName("");
         }
         setMounted(false);
       }
@@ -172,17 +176,15 @@ function SetLocationComponent(props) {
       const response = await axios.get(
         `https://restcountries.com/v3.1/name/${countryFullName}`
       );
-      const currencyName = JSON.stringify(
-        response.data[response.data.length - 1].currencies
-      )
+      const countryInfo = response.data[response.data.length - 1];
+      const currencyName = JSON.stringify(countryInfo.currencies)
         .split(":")[0]
         .slice(2)
         .slice(0, -1);
+      setCountry(countryInfo.name.common);
       setCurrency({
         name: currencyName,
-        symbol:
-          response.data[response.data.length - 1].currencies[currencyName]
-            .symbol,
+        symbol: countryInfo.currencies[currencyName].symbol,
       });
     } catch (error) {}
   };
@@ -292,7 +294,9 @@ function SetLocationComponent(props) {
             <div>
               <span className="h5">Currency:</span>
               <div className="h5 text-secondary">
-                {rateData[currency.name]} {currency.symbol}
+                {currency.name !== ""
+                  ? `${rateData[currency.name]} ${currency.symbol}`
+                  : ""}
               </div>
             </div>
           </div>
