@@ -9,7 +9,11 @@ app.use(cors());
 
 app.get("/api/shopping/:country/:location/:product", (req, res) => {
   const uule = createUule(req.params.location);
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${req.params.product}&uule=${uule}&hl=en&gl=${req.params.country}&api_key=${process.env.SerpApiKey}&start=${req.query.start}&num=${req.query.num}`;
+  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(
+    req.params.product
+  )}&uule=${uule}&hl=en&gl=${req.params.country}&api_key=${
+    process.env.SerpApiKey
+  }&start=${req.query.start}&num=${req.query.num}`;
   console.log(url);
   axios({
     method: "get",

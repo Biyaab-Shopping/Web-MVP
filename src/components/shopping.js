@@ -49,24 +49,28 @@ function ShoppingComponent(props) {
             response = await axios.get(
               `${setting.backend}/shopping/${countryCode}/${
                 locationInfos[i].locationName
-              }/${searchName}?start=${(page - 1) * num}&num=${num}${
-                tbs !== null ? `&tbs=${tbs}` : ""
-              }`
+              }/${encodeURIComponent(searchName)}?start=${
+                (page - 1) * num
+              }&num=${num}${tbs !== null ? `&tbs=${tbs}` : ""}`
             );
             if (response.data.error) throw response.data.error;
             let shopping_results = response.data.shopping_results.map((el) => {
               return {
                 ...el,
                 rating: el.rating ? el.rating : 0,
-                usd_price: Number(
-                  (
-                    el.extracted_price / locationInfos[i].currencyInfo.rate
-                  ).toFixed(2)
-                ),
-                real_price:
-                  el.extracted_price.toString() +
-                  " " +
-                  locationInfos[i].currencyInfo.name,
+                reviews: el.reviews ? el.reviews : 0,
+                usd_price: el.extracted_price
+                  ? Number(
+                      (
+                        el.extracted_price / locationInfos[i].currencyInfo.rate
+                      ).toFixed(2)
+                    )
+                  : "",
+                real_price: el.extracted_price
+                  ? el.extracted_price.toString() +
+                    " " +
+                    locationInfos[i].currencyInfo.name
+                  : "",
                 locationInfo: i + 1,
               };
             });
@@ -338,30 +342,34 @@ function ShoppingComponent(props) {
                       </a>
                     </div>
                     <div className="product_title">{ele.title}</div>
-                    <div className="d-flex align-items-center">
-                      <span className="mt-1" style={{ marginRight: "10px" }}>
-                        {ele.rating}
-                      </span>
-                      {ele.rating && (
-                        <ReactStars
-                          edit={false}
-                          value={Math.round(ele.rating)}
-                          count={5}
-                          // onChange={ratingChanged}
-                          size={24}
-                          activeColor="#ffd700"
-                        />
-                      )}
-                      <span className="mt-1" style={{ marginLeft: "10px" }}>
-                        {ele.reviews}
-                      </span>
-                    </div>
-                    <div
-                      className="font-weight-bold"
-                      style={{ fontWeight: "bold" }}
-                    >
-                      {`price:${ele.real_price} -> ${ele.usd_price} USD`}
-                    </div>
+                    {ele.reviews && ele.reviews > 0 && (
+                      <div className="d-flex align-items-center">
+                        <span className="mt-1" style={{ marginRight: "10px" }}>
+                          {ele.rating}
+                        </span>
+                        {ele.rating && (
+                          <ReactStars
+                            edit={false}
+                            value={Math.round(ele.rating)}
+                            count={5}
+                            // onChange={ratingChanged}
+                            size={24}
+                            activeColor="#ffd700"
+                          />
+                        )}
+                        <span className="mt-1" style={{ marginLeft: "10px" }}>
+                          {ele.reviews}
+                        </span>
+                      </div>
+                    )}
+                    {ele.usd_price !== "" && (
+                      <div
+                        className="font-weight-bold"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {`price:${ele.real_price} -> ${ele.usd_price} USD`}
+                      </div>
+                    )}
                   </div>
                   <div className="my-1 px-2" style={{ height: "100%" }}>
                     <a href={ele.link} style={{ textDecoration: "none" }}>
