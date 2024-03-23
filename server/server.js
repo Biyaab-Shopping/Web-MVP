@@ -22,7 +22,7 @@ const upload = multer({ storage: storage });
 require("dotenv").config();
 
 app.use(cors());
-app.use("/static", express.static(path.join(__dirname, "uploads")));
+app.use("/api/static", express.static(path.join(__dirname, "uploads")));
 
 app.get("/api/shopping/:country/:location/:product", (req, res) => {
   const uule = createUule(req.params.location);
