@@ -52,9 +52,9 @@ app.post(
     const uule = createUule(req.params.location);
     const url = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(
       process.env.BackendLink + "static/" + req.file.filename
-    )}
-    &uule=${uule}
-    &hl=en&country=${req.params.country}&api_key=${process.env.SerpApiKey}`;
+    )}&uule=${uule}&hl=en&country=${req.params.country}&api_key=${
+      process.env.SerpApiKey
+    }`;
     console.log(url);
     axios({
       method: "get",
