@@ -105,16 +105,16 @@ export async function fetchImageRelatedData(
               ...el,
               rating: el.rating ? el.rating : 0,
               reviews: el.reviews ? el.reviews : 0,
-              usd_price: el.price?.extracted_price
+              usd_price: el.price?.extracted_value
                 ? Number(
                     (
-                      el.price.extracted_price /
+                      el.price.extracted_value /
                       locationInfos[i].currencyInfo.rate
                     ).toFixed(2)
                   )
-                : "",
-              real_price: el.price?.extracted_price
-                ? el.price.extracted_price.toString() +
+                : Number(0),
+              real_price: el.price?.extracted_value
+                ? el.price.extracted_value.toString() +
                   " " +
                   locationInfos[i].currencyInfo.name
                 : "",
@@ -134,11 +134,11 @@ export async function fetchImageRelatedData(
     } catch (error) {
       console.log(error);
     } finally {
-      setSearchResult({ image_related_results: data });
-      setTimeout(() => {
-        sorterByFunc(data);
-        setLoading(false);
-      }, 150);
+      // setSearchResult({ image_related_results: data });
+      // setTimeout(() => {
+      sorterByFunc(data);
+      setLoading(false);
+      // }, 150);
     }
   }
 }

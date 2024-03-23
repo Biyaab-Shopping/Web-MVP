@@ -5,6 +5,8 @@ var axios = require("axios");
 const createUule = require("create-uule");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, "uploads"));
@@ -66,6 +68,9 @@ app.post(
       .catch((error) => {
         console.log(error.response.data);
         res.status(400).json(error.response.data);
+      })
+      .finally(function () {
+        fs.unlinkSync(req.file.path);
       });
   }
 );

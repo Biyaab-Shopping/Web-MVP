@@ -50,103 +50,6 @@ function ShoppingComponent(props) {
     setSearchResult({ shopping_results: [], image_related_results: [] });
     setPage(1);
   }
-  // async function fetchData(searchName, page = 1, num = 80, tbs = null) {
-  //   let data = [];
-  //   if (searchName !== "") {
-  //     try {
-  //       loadingReset();
-  //       setLoading(true);
-  //       for (let i = 0; i < locationInfos.length; i++) {
-  //         const countryCode = countryData.find((el) =>
-  //           el.country_name.includes(locationInfos[i].country)
-  //         ).country_code;
-  //         let response;
-  //         try {
-  //           response = await axios.get(
-  //             `${setting.backend}/shopping/${countryCode}/${
-  //               locationInfos[i].locationName
-  //             }/${encodeURIComponent(searchName)}?start=${
-  //               (page - 1) * num
-  //             }&num=${num}${tbs !== null ? `&tbs=${tbs}` : ""}`
-  //           );
-  //           if (response.data.error) throw response.data.error;
-  //           let shopping_results = response.data.shopping_results.map((el) => {
-  //             return {
-  //               ...el,
-  //               rating: el.rating ? el.rating : 0,
-  //               reviews: el.reviews ? el.reviews : 0,
-  //               usd_price: el.extracted_price
-  //                 ? Number(
-  //                     (
-  //                       el.extracted_price / locationInfos[i].currencyInfo.rate
-  //                     ).toFixed(2)
-  //                   )
-  //                 : "",
-  //               real_price: el.extracted_price
-  //                 ? el.extracted_price.toString() +
-  //                   " " +
-  //                   locationInfos[i].currencyInfo.name
-  //                 : "",
-  //               locationInfo: i + 1,
-  //             };
-  //           });
-  //           data = [...data, ...shopping_results];
-  //         } catch (error) {
-  //           const errorMessage = error.response
-  //             ? error.response.data.error
-  //             : `Google doesn't support "${locationInfos[i].locationName}".`;
-  //           console.log(errorMessage);
-  //           alert(errorMessage);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.log(error);
-  //     } finally {
-  //       setSearchResult({ shopping_results: data });
-  //       setTimeout(() => {
-  //         sorterByFunc(data);
-  //         setLoading(false);
-  //       }, 150);
-  //     }
-  //   }
-  // }
-
-  useEffect(() => {
-    mode === "text"
-      ? fetchData(
-          loadingReset,
-          setLoading,
-          searchProduct,
-          setSearchResult,
-          sorterByFunc,
-          locationInfos
-        )
-      : fetchImageRelatedData(
-          loadingReset,
-          setLoading,
-          setSearchResult,
-          sorterByFunc,
-          locationInfos,
-          cropImage()
-        );
-    // eslint-disable-next-line
-  }, [locationInfos]);
-
-  const changeSearchProduct = (value) => {
-    setSearchProduct(value);
-    if (locationInfos.length > 0) {
-      fetchData(
-        loadingReset,
-        setLoading,
-        value,
-        setSearchResult,
-        sorterByFunc,
-        locationInfos
-      );
-    } else {
-      alert("Please Choose Minimum One Location From the Filter Icon");
-    }
-  };
 
   const removeLocationInfoItem = useCallback(
     (index) => {
@@ -196,6 +99,7 @@ function ShoppingComponent(props) {
       data = data.slice((page - 1) * pageSize, page * pageSize);
       setDisplayData([...data]);
     }
+    // eslint-disable-next-line
   }, [page, pageSize, searchResult]);
 
   useEffect(() => {
@@ -214,6 +118,7 @@ function ShoppingComponent(props) {
         setPage(1);
       }
     }
+    // eslint-disable-next-line
   }, [searchResult, pageSize]);
 
   const sorterByFunc = (
@@ -236,9 +141,11 @@ function ShoppingComponent(props) {
           ? _.sortBy(data, sorterBy)
           : _.reverse(_.sortBy(data, sorterBy));
       }
-      mode === "text"
-        ? setSearchResult({ shopping_results: data })
-        : setSearchProduct({ image_related_results: data });
+      if (mode === "text") {
+        setSearchResult({ shopping_results: data, image_related_results: [] });
+      } else {
+        setSearchResult({ shopping_results: [], image_related_results: data });
+      }
     }
   };
 
@@ -261,6 +168,80 @@ function ShoppingComponent(props) {
   const onChangeSorter = () => {
     const val = !sorter;
     setSorter(val);
+  };
+
+  const handleChangeMode = () => {
+    loadingReset();
+    setLoading(false);
+    setSearchProduct("");
+    cropImage(null);
+    setSelectImage(null);
+    setMode(mode === "text" ? "image" : "text");
+  };
+
+  useEffect(() => {
+    mode === "text"
+      ? fetchData(
+          loadingReset,
+          setLoading,
+          searchProduct,
+          setSearchResult,
+          sorterByFunc,
+          locationInfos
+        )
+      : fetchImageRelatedData(
+          loadingReset,
+          setLoading,
+          setSearchResult,
+          sorterByFunc,
+          locationInfos,
+          cropImage()
+        );
+    // eslint-disable-next-line
+  }, [locationInfos]);
+
+  const changeSearchProduct = (value) => {
+    setSearchProduct(value);
+    if (locationInfos.length > 0) {
+      fetchData(
+        loadingReset,
+        setLoading,
+        value,
+        setSearchResult,
+        sorterByFunc,
+        locationInfos
+      );
+    } else {
+      alert("Please Choose Minimum One Location From the Filter Icon");
+    }
+  };
+
+  const handleUploadImage = (file) => {
+    setSelectImage(file);
+  };
+
+  const onChangeCropImage = (file) => {
+    cropImage(file);
+    console.log("crop image:", cropImage());
+  };
+
+  useEffect(() => {
+    console.log(selectImage);
+  }, [selectImage]);
+
+  const onSearchRelatedProducts = () => {
+    if (locationInfos.length > 0) {
+      fetchImageRelatedData(
+        loadingReset,
+        setLoading,
+        setSearchResult,
+        sorterByFunc,
+        locationInfos,
+        cropImage()
+      );
+    } else {
+      alert("Please Choose Minimum One Location From the Filter Icon");
+    }
   };
 
   const paginationPart = () => {
@@ -363,40 +344,6 @@ function ShoppingComponent(props) {
       </div>
     );
   };
-  // eslint-disable-next-line
-  // }, [
-  //   pageCount,
-  //   page,
-  //   pageSize,
-  //   sorter,
-  //   sorterBy,
-  //   // onChangeSorterBy,
-  //   // onChangeSorter,
-  //   sorterBys,
-  //   pageSizes,
-  // ]);
-
-  const handleUploadImage = (file) => {
-    setSelectImage(file);
-  };
-
-  const onChangeCropImage = (file) => {
-    cropImage(file);
-    console.log("crop image:", cropImage());
-  };
-
-  useEffect(() => {
-    console.log(selectImage);
-  }, [selectImage]);
-
-  const handleChangeMode = () => {
-    loadingReset();
-    setLoading(false);
-    setSearchProduct("");
-    cropImage(null);
-    setSelectImage(null);
-    setMode(mode === "text" ? "image" : "text");
-  };
 
   const productsPart = useMemo(() => {
     return (
@@ -433,7 +380,7 @@ function ShoppingComponent(props) {
                       )}
                     </div>
                     <div className="product_title">{ele.title}</div>
-                    {ele.reviews && ele.reviews > 0 && (
+                    {ele.reviews > 0 && (
                       <div className="d-flex align-items-center">
                         <span className="mt-1" style={{ marginRight: "10px" }}>
                           {ele.rating}
@@ -453,17 +400,32 @@ function ShoppingComponent(props) {
                         </span>
                       </div>
                     )}
-                    {ele.usd_price !== "" && (
+                    {ele.usd_price !== 0 && (
                       <div
                         className="font-weight-bold"
                         style={{ fontWeight: "bold" }}
                       >
-                        {`price:${ele.real_price} -> ${ele.usd_price} USD`}
+                        {`price: ${ele.real_price} -> ${ele.usd_price} USD`}
                       </div>
                     )}
                   </div>
                   <div className="my-1 px-2" style={{ height: "100%" }}>
-                    <a href={ele.link} style={{ textDecoration: "none" }}>
+                    <a
+                      href={ele.link}
+                      style={{ textDecoration: "none" }}
+                      className="d-flex align-items-center"
+                    >
+                      {mode !== "text" && ele.source_icon && (
+                        <img
+                          src={ele.source_icon}
+                          alt="source icon"
+                          style={{
+                            maxWidth: "20px",
+                            maxHeight: "20px",
+                            marginRight: "5px",
+                          }}
+                        ></img>
+                      )}
                       {ele.source}
                     </a>
                     {mode === "text" && (
@@ -518,20 +480,6 @@ function ShoppingComponent(props) {
     // eslint-disable-next-line
   }, [displayData]);
 
-  const onSearchRelatedProducts = () => {
-    if (locationInfos.length > 0) {
-      fetchImageRelatedData(
-        loadingReset,
-        setLoading,
-        setSearchResult,
-        sorterByFunc,
-        locationInfos,
-        cropImage()
-      );
-    } else {
-      alert("Please Choose Minimum One Location From the Filter Icon");
-    }
-  };
   return (
     <div className="pb-3">
       <Row className="align-items-center">
