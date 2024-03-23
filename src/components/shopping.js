@@ -186,8 +186,13 @@ function ShoppingComponent(props) {
   );
 
   useEffect(() => {
-    if (searchResult.shopping_results) {
+    if (mode === "text" && searchResult.shopping_results) {
       let data = [...searchResult.shopping_results];
+      data = data.slice((page - 1) * pageSize, page * pageSize);
+      setDisplayData([...data]);
+    }
+    if (mode === "image" && searchResult.image_related_results) {
+      let data = [...searchResult.image_related_results];
       data = data.slice((page - 1) * pageSize, page * pageSize);
       setDisplayData([...data]);
     }

@@ -105,7 +105,7 @@ export async function fetchImageRelatedData(
               ...el,
               rating: el.rating ? el.rating : 0,
               reviews: el.reviews ? el.reviews : 0,
-              usd_price: el.price.extracted_price
+              usd_price: el.price?.extracted_price
                 ? Number(
                     (
                       el.price.extracted_price /
@@ -113,7 +113,7 @@ export async function fetchImageRelatedData(
                     ).toFixed(2)
                   )
                 : "",
-              real_price: el.price.extracted_price
+              real_price: el.price?.extracted_price
                 ? el.price.extracted_price.toString() +
                   " " +
                   locationInfos[i].currencyInfo.name
@@ -123,6 +123,7 @@ export async function fetchImageRelatedData(
           });
           data = [...data, ...visual_matches];
         } catch (error) {
+          console.log(error);
           const errorMessage = error.response
             ? error.response.data.error
             : `Google doesn't support "${locationInfos[i].locationName}".`;
