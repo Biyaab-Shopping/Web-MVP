@@ -18,8 +18,10 @@ function MapContainer(props) {
   const [mapData, setMapData] = useState(null);
 
   const containerStyle = {
-    width: "400px",
+    width:
+      window.screen.width > 567 ? "400px" : `${window.screen.width - 50}px`,
     height: "400px",
+    maxWidth: "100%",
   };
 
   const mapClicked = (mapProps, map, clickEvent) => {

@@ -1,24 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import _ from "lodash";
 
-import { Row, Col, Pagination, Dropdown } from "react-bootstrap";
+import { Row, Col, Pagination, Dropdown, Form, Button } from "react-bootstrap";
 import ReactStars from "react-rating-stars-component";
+import { FileUploader } from "react-drag-drop-files";
 import SearchInput from "./search_input";
+import ImageCropper from "./imageCropper";
 
 import image1 from "../assests/BiYaab Search Globally With No Restrictions.png";
 import map from "../assests/map.png";
+import lensIcon from "../assests/lens.png";
+import textIcon from "../assests/text_icon.png";
 
-import * as setting from "../config";
-import countryData from "../google-countries.json";
+import { fetchData, fetchImageRelatedData } from "../actions/shopping";
+
 // import Carousel from "@moxy/react-carousel";
 
 // import "@moxy/react-carousel/dist/styles.css";
+import "react-image-crop/dist/ReactCrop.css";
+
+let imgMemo = null;
+const cropImage = (image) => {
+  if (image) {
+    imgMemo = image;
+  } else {
+    return imgMemo;
+  }
+};
 
 function ShoppingComponent(props) {
   const sorterBys = ["price", "rating", "reviews", "source"];
+  const fileTypes = ["JPG", "PNG"];
   const pageSizes = [20, 40, 60, 80];
   const { locationInfos, setLocationInfos } = props;
+  const [mode, setMode] = useState("text");
   const [searchProduct, setSearchProduct] = useState("");
   const [searchResult, setSearchResult] = useState({});
   const [displayData, setDisplayData] = useState([]);
@@ -28,82 +43,106 @@ function ShoppingComponent(props) {
   const [pageCount, setPageCount] = useState(0);
   const [sorterBy, setSorterBy] = useState(sorterBys[0]);
   const [sorter, setSorter] = useState(true);
+  const [selectImage, setSelectImage] = useState(null);
 
   function loadingReset() {
     setDisplayData([]);
-    setSearchResult({ shopping_results: [] });
+    setSearchResult({ shopping_results: [], image_related_results: [] });
     setPage(1);
   }
-  async function fetchData(searchName, page = 1, num = 80, tbs = null) {
-    let data = [];
-    if (searchName !== "") {
-      try {
-        loadingReset();
-        setLoading(true);
-        for (let i = 0; i < locationInfos.length; i++) {
-          const countryCode = countryData.find((el) =>
-            el.country_name.includes(locationInfos[i].country)
-          ).country_code;
-          let response;
-          try {
-            response = await axios.get(
-              `${setting.backend}/shopping/${countryCode}/${
-                locationInfos[i].locationName
-              }/${encodeURIComponent(searchName)}?start=${
-                (page - 1) * num
-              }&num=${num}${tbs !== null ? `&tbs=${tbs}` : ""}`
-            );
-            if (response.data.error) throw response.data.error;
-            let shopping_results = response.data.shopping_results.map((el) => {
-              return {
-                ...el,
-                rating: el.rating ? el.rating : 0,
-                reviews: el.reviews ? el.reviews : 0,
-                usd_price: el.extracted_price
-                  ? Number(
-                      (
-                        el.extracted_price / locationInfos[i].currencyInfo.rate
-                      ).toFixed(2)
-                    )
-                  : "",
-                real_price: el.extracted_price
-                  ? el.extracted_price.toString() +
-                    " " +
-                    locationInfos[i].currencyInfo.name
-                  : "",
-                locationInfo: i + 1,
-              };
-            });
-            data = [...data, ...shopping_results];
-          } catch (error) {
-            const errorMessage = error.response
-              ? error.response.data.error
-              : `Google doesn't support "${locationInfos[i].locationName}".`;
-            console.log(errorMessage);
-            alert(errorMessage);
-          }
-        }
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setSearchResult({ shopping_results: data });
-        setTimeout(() => {
-          sorterByFunc(data);
-          setLoading(false);
-        }, 150);
-      }
-    }
-  }
+  // async function fetchData(searchName, page = 1, num = 80, tbs = null) {
+  //   let data = [];
+  //   if (searchName !== "") {
+  //     try {
+  //       loadingReset();
+  //       setLoading(true);
+  //       for (let i = 0; i < locationInfos.length; i++) {
+  //         const countryCode = countryData.find((el) =>
+  //           el.country_name.includes(locationInfos[i].country)
+  //         ).country_code;
+  //         let response;
+  //         try {
+  //           response = await axios.get(
+  //             `${setting.backend}/shopping/${countryCode}/${
+  //               locationInfos[i].locationName
+  //             }/${encodeURIComponent(searchName)}?start=${
+  //               (page - 1) * num
+  //             }&num=${num}${tbs !== null ? `&tbs=${tbs}` : ""}`
+  //           );
+  //           if (response.data.error) throw response.data.error;
+  //           let shopping_results = response.data.shopping_results.map((el) => {
+  //             return {
+  //               ...el,
+  //               rating: el.rating ? el.rating : 0,
+  //               reviews: el.reviews ? el.reviews : 0,
+  //               usd_price: el.extracted_price
+  //                 ? Number(
+  //                     (
+  //                       el.extracted_price / locationInfos[i].currencyInfo.rate
+  //                     ).toFixed(2)
+  //                   )
+  //                 : "",
+  //               real_price: el.extracted_price
+  //                 ? el.extracted_price.toString() +
+  //                   " " +
+  //                   locationInfos[i].currencyInfo.name
+  //                 : "",
+  //               locationInfo: i + 1,
+  //             };
+  //           });
+  //           data = [...data, ...shopping_results];
+  //         } catch (error) {
+  //           const errorMessage = error.response
+  //             ? error.response.data.error
+  //             : `Google doesn't support "${locationInfos[i].locationName}".`;
+  //           console.log(errorMessage);
+  //           alert(errorMessage);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.log(error);
+  //     } finally {
+  //       setSearchResult({ shopping_results: data });
+  //       setTimeout(() => {
+  //         sorterByFunc(data);
+  //         setLoading(false);
+  //       }, 150);
+  //     }
+  //   }
+  // }
 
   useEffect(() => {
-    fetchData(searchProduct);
+    mode === "text"
+      ? fetchData(
+          loadingReset,
+          setLoading,
+          searchProduct,
+          setSearchResult,
+          sorterByFunc,
+          locationInfos
+        )
+      : fetchImageRelatedData(
+          loadingReset,
+          setLoading,
+          setSearchResult,
+          sorterByFunc,
+          locationInfos,
+          cropImage()
+        );
     // eslint-disable-next-line
   }, [locationInfos]);
 
   const changeSearchProduct = (value) => {
     setSearchProduct(value);
     if (locationInfos.length > 0) {
-      fetchData(value);
+      fetchData(
+        loadingReset,
+        setLoading,
+        value,
+        setSearchResult,
+        sorterByFunc,
+        locationInfos
+      );
     } else {
       alert("Please Choose Minimum One Location From the Filter Icon");
     }
@@ -155,13 +194,28 @@ function ShoppingComponent(props) {
   }, [page, pageSize, searchResult]);
 
   useEffect(() => {
-    if (searchResult.shopping_results) {
-      setPageCount(Math.ceil(searchResult.shopping_results.length / pageSize));
-      setPage(1);
+    if (mode === "text") {
+      if (searchResult.shopping_results) {
+        setPageCount(
+          Math.ceil(searchResult.shopping_results.length / pageSize)
+        );
+        setPage(1);
+      }
+    } else {
+      if (searchResult.image_related_results) {
+        setPageCount(
+          Math.ceil(searchResult.image_related_results.length / pageSize)
+        );
+        setPage(1);
+      }
     }
   }, [searchResult, pageSize]);
 
-  const sorterByFunc = (data1 = searchResult.shopping_results) => {
+  const sorterByFunc = (
+    data1 = mode === "text"
+      ? searchResult.shopping_results
+      : searchResult.image_related_results
+  ) => {
     if (data1) {
       let data = [...data1];
       if (sorterBy === "price") {
@@ -177,7 +231,9 @@ function ShoppingComponent(props) {
           ? _.sortBy(data, sorterBy)
           : _.reverse(_.sortBy(data, sorterBy));
       }
-      setSearchResult({ shopping_results: data });
+      mode === "text"
+        ? setSearchResult({ shopping_results: data })
+        : setSearchProduct({ image_related_results: data });
     }
   };
 
@@ -315,6 +371,28 @@ function ShoppingComponent(props) {
   //   pageSizes,
   // ]);
 
+  const handleUploadImage = (file) => {
+    setSelectImage(file);
+  };
+
+  const onChangeCropImage = (file) => {
+    cropImage(file);
+    console.log("crop image:", cropImage());
+  };
+
+  useEffect(() => {
+    console.log(selectImage);
+  }, [selectImage]);
+
+  const handleChangeMode = () => {
+    loadingReset();
+    setLoading(false);
+    setSearchProduct("");
+    cropImage(null);
+    setSelectImage(null);
+    setMode(mode === "text" ? "image" : "text");
+  };
+
   const productsPart = useMemo(() => {
     return (
       <Row>
@@ -333,13 +411,21 @@ function ShoppingComponent(props) {
                   </div>
                   <div className="border-bottom p-2" style={{ height: "100%" }}>
                     <div className="d-flex justify-content-center">
-                      <a href={ele.product_link}>
+                      {mode === "text" ? (
+                        <a href={ele.product_link}>
+                          <img
+                            src={ele.thumbnail}
+                            alt={ele.title}
+                            style={{ maxWidth: "100%", maxHeight: "100px" }}
+                          ></img>
+                        </a>
+                      ) : (
                         <img
                           src={ele.thumbnail}
                           alt={ele.title}
                           style={{ maxWidth: "100%", maxHeight: "100px" }}
                         ></img>
-                      </a>
+                      )}
                     </div>
                     <div className="product_title">{ele.title}</div>
                     {ele.reviews && ele.reviews > 0 && (
@@ -375,26 +461,36 @@ function ShoppingComponent(props) {
                     <a href={ele.link} style={{ textDecoration: "none" }}>
                       {ele.source}
                     </a>
-                    <br />
-                    <p>{ele.delivery}</p>
-                    {ele.store_rating ? (
-                      <div className="d-flex">
-                        <span className="mt-2" style={{ marginRight: "10px" }}>
-                          {ele.store_rating}/5
-                        </span>
-                        <ReactStars
-                          value={1}
-                          count={1}
-                          size={24}
-                          activeColor="#ffd700"
-                        />
-                        <span className="mt-2" style={{ marginLeft: "10px" }}>
-                          {ele.store_reviews}
-                        </span>
-                      </div>
-                    ) : null}
+                    {mode === "text" && (
+                      <>
+                        <br />
+                        <p>{ele.delivery}</p>
+                        {ele.store_rating ? (
+                          <div className="d-flex">
+                            <span
+                              className="mt-2"
+                              style={{ marginRight: "10px" }}
+                            >
+                              {ele.store_rating}/5
+                            </span>
+                            <ReactStars
+                              value={1}
+                              count={1}
+                              size={24}
+                              activeColor="#ffd700"
+                            />
+                            <span
+                              className="mt-2"
+                              style={{ marginLeft: "10px" }}
+                            >
+                              {ele.store_reviews}
+                            </span>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </div>
-                  {ele.number_of_comparisons ? (
+                  {mode === "text" && ele.number_of_comparisons ? (
                     <div className="border-top px-2">
                       <a
                         className="py-1"
@@ -416,52 +512,191 @@ function ShoppingComponent(props) {
     );
     // eslint-disable-next-line
   }, [displayData]);
+
+  const onSearchRelatedProducts = () => {
+    if (locationInfos.length > 0) {
+      fetchImageRelatedData(
+        loadingReset,
+        setLoading,
+        setSearchResult,
+        sorterByFunc,
+        locationInfos,
+        cropImage()
+      );
+    } else {
+      alert("Please Choose Minimum One Location From the Filter Icon");
+    }
+  };
   return (
-    <div>
+    <div className="pb-3">
       <Row className="align-items-center">
-        <Col xl={3} className="mb-3">
+        <Col
+          xl={3}
+          className="mb-3 order-xl-1 order-2"
+          style={{ maxHeight: "250px", overflowY: "auto" }}
+        >
           {locationPart}
         </Col>
-        <Col xl={6} className="d-flex justify-content-center mb-3">
+        <Col
+          xl={6}
+          className="d-flex justify-content-center mb-3 order-1 order-xl-2"
+        >
           <img
             src={image1}
             alt="image1"
             style={{ height: searchProduct !== "" ? "100px" : "100px" }}
           ></img>
         </Col>
-        {searchProduct !== "" ? (
-          <Col xl={3}>
-            <SearchInput
-              searchValue={searchProduct}
-              setSearchValue={changeSearchProduct}
-            ></SearchInput>
-          </Col>
-        ) : null}
+        <Col
+          xl={3}
+          className="order-3 d-flex justify-content-end align-items-center"
+        >
+          {mode === "text" && searchProduct !== "" ? (
+            <>
+              <SearchInput
+                searchValue={searchProduct}
+                setSearchValue={changeSearchProduct}
+              ></SearchInput>
+              <div
+                style={{ cursor: "pointer", marginLeft: "10px" }}
+                onClick={handleChangeMode}
+              >
+                <img src={lensIcon} alt="icon" height={30}></img>
+              </div>
+            </>
+          ) : null}
+          {mode === "image" && selectImage && (
+            <div
+              style={{ cursor: "pointer", marginLeft: "10px" }}
+              onClick={handleChangeMode}
+            >
+              <img src={textIcon} alt="icon" height={30}></img>
+            </div>
+          )}
+        </Col>
       </Row>
 
-      {searchProduct === "" ? (
+      {mode === "text" ? (
+        searchProduct === "" ? (
+          <Row className="justify-content-center py-3">
+            <Col
+              xl={4}
+              className="d-flex justify-content-center align-items-center"
+            >
+              <div style={{ width: "100%" }}>
+                <SearchInput
+                  searchValue={searchProduct}
+                  setSearchValue={changeSearchProduct}
+                ></SearchInput>
+              </div>
+              <div
+                style={{ cursor: "pointer", marginLeft: "10px" }}
+                onClick={handleChangeMode}
+              >
+                <img src={lensIcon} alt="icon" height={30}></img>
+              </div>
+            </Col>
+          </Row>
+        ) : null
+      ) : selectImage === null ? (
         <Row className="justify-content-center py-3">
           <Col xl={4}>
-            <SearchInput
-              searchValue={searchProduct}
-              setSearchValue={changeSearchProduct}
-            ></SearchInput>
+            <div className="image-drop-part p-3">
+              <div className="d-flex justify-content-center position-relative">
+                <div>Search any image with Google Lens</div>
+                <div className="position-absolute top-0 end-0">
+                  <div className="close-button" onClick={handleChangeMode}>
+                    X
+                  </div>
+                </div>
+              </div>
+              <div
+                className="mt-2 w-full p-3"
+                style={{ border: "dotted 2px #817b7b", borderRadius: "10px" }}
+              >
+                <div className="d-flex justify-content-center align-items-center">
+                  <FileUploader
+                    handleChange={handleUploadImage}
+                    name="object"
+                    types={fileTypes}
+                    label="Drap and drop"
+                  >
+                    <div
+                      className="w-full d-flex justify-content-center align-items-center p-4 border"
+                      style={{ height: "200px", borderRadius: "10px" }}
+                    >
+                      <div className="w-full d-flex justify-content-center">
+                        Drag an image here or upload a file
+                      </div>
+                    </div>
+                  </FileUploader>
+                </div>
+
+                <div
+                  className="d-flex justify-content-center align-items-center"
+                  style={{ width: "100%" }}
+                >
+                  <div
+                    className="border"
+                    style={{ height: 0, width: "100%" }}
+                  ></div>
+                  <div>&nbsp;OR&nbsp;</div>
+                  <div
+                    className="border"
+                    style={{ height: 0, width: "100%" }}
+                  ></div>
+                </div>
+                <Row className="">
+                  <Col sm={9}>
+                    <Form.Control placeholder="Paste image link" />
+                  </Col>
+                  <Col sm={3} className="mt-md-0 mt-2">
+                    <Button className="w-full" style={{ width: "100%" }}>
+                      Search
+                    </Button>
+                  </Col>
+                </Row>
+              </div>
+            </div>
           </Col>
         </Row>
       ) : null}
 
-      {searchProduct === "" ? (
-        <Row className="justify-content-center mt-4">
-          <Col sm={7}>
-            <img src={map} alt="map" style={{ width: "100%" }}></img>
+      {mode === "text" ? (
+        searchProduct === "" ? (
+          <Row className="justify-content-center mt-4">
+            <Col sm={7}>
+              <img src={map} alt="map" style={{ width: "100%" }}></img>
+            </Col>
+          </Row>
+        ) : loading ? (
+          <div className="d-flex justify-content-center">
+            <span className="h2">loading...</span>
+          </div>
+        ) : (
+          productsPart
+        )
+      ) : selectImage === null ? null : (
+        <Row>
+          <Col md={4} className="crop-image-parent">
+            <ImageCropper
+              src={URL.createObjectURL(selectImage)}
+              onChangeCropImage={onChangeCropImage}
+            />
+          </Col>
+          <Col md={8} className="mt-md-0 mt-2">
+            <div className="d-flex justify-content-end">
+              <Button onClick={onSearchRelatedProducts}>Search</Button>
+            </div>
+            {loading ? (
+              <div className="d-flex justify-content-center">
+                <span className="h2">loading...</span>
+              </div>
+            ) : (
+              productsPart
+            )}
           </Col>
         </Row>
-      ) : loading ? (
-        <div className="d-flex justify-content-center">
-          <span className="h2">loading...</span>
-        </div>
-      ) : (
-        productsPart
       )}
     </div>
   );

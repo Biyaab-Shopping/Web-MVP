@@ -73,6 +73,7 @@ function App() {
         ></Shopping>
       </Container>
       <Modal
+        className="p-0"
         show={modalOpen}
         onHide={modalOpenToggle}
         size="lg"
