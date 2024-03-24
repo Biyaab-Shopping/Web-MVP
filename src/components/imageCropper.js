@@ -22,6 +22,7 @@ const ImageCropper = (props) => {
   const [croppedImage, setCroppedImage] = useState(null);
   const [cropString, setCropString] = useState(JSON.stringify(crop));
   const [completedCrop, setCompletedCrop] = useState();
+  const [imageLoadFlag, setImageLoadFlag] = useState(false);
 
   const onImageLoaded = (e) => {
     // Do something when the image is loaded
@@ -33,6 +34,7 @@ const ImageCropper = (props) => {
     //   height: image.target.height,
     // });
     // eslint-disable-next-line
+    setImageLoadFlag(true);
   };
 
   const onCropChange = (newCrop, percentCrop) => {
@@ -124,7 +126,7 @@ const ImageCropper = (props) => {
         const { width, height } = imageRef.current;
         makeClientCrop(convertToPixelCrop(crop, width, height));
       }
-      run();
+      if (imageLoadFlag) run();
     },
     [cropString]
   );
