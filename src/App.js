@@ -68,11 +68,13 @@ function App() {
       <Container>
         <Head modalOpen={modalOpenToggle}></Head>
         <Shopping
+          rateData={rateData}
           locationInfos={locationInfos}
           setLocationInfos={setLocationInfos}
         ></Shopping>
       </Container>
       <Modal
+        className="p-0"
         show={modalOpen}
         onHide={modalOpenToggle}
         size="lg"

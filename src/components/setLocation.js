@@ -269,7 +269,7 @@ function SetLocationComponent(props) {
   return (
     <div>
       <Row className="align-items-center g-4">
-        <Col className="">
+        <Col className="order-md-1 order-2">
           <div className="mb-2">
             <span className="h5">location search:</span>
           </div>
@@ -326,7 +326,7 @@ function SetLocationComponent(props) {
             </Button>
           </div>
         </Col>
-        <Col className="align-self-center">
+        <Col className="order-md-2 order-1 align-self-center">
           <div className="mapPart">
             <div className="mb-2 d-flex justify-content-end">
               <Button
@@ -408,7 +408,9 @@ function SetLocationComponent(props) {
               </Button>
             </div>
             <div className="d-flex justify-content-center">
-              <div style={{ width: "400px", height: "400px" }}>
+              <div
+                style={{ width: "400px", height: "400px", maxWidth: "100%" }}
+              >
                 <MapComponent
                   // setMapLoading={setMapLoading}
                   // size={size}
