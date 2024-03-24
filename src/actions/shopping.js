@@ -140,10 +140,12 @@ export async function fetchImageRelatedData(
           data = [...data, ...visual_matches];
         } catch (error) {
           console.log(error);
-          const errorMessage = error.response
-            ? error.response.data.error
-            : `Google doesn't support "${locationInfos[i].locationName}".`;
-          console.log(errorMessage);
+          const errorMessage =
+            typeof error === "string"
+              ? error
+              : error.response
+              ? error.response.data.error
+              : `Google doesn't support "${locationInfos[i].locationName}".`;
           alert(errorMessage);
         }
       }
