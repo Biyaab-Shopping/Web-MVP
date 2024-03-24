@@ -68,6 +68,7 @@ function App() {
       <Container>
         <Head modalOpen={modalOpenToggle}></Head>
         <Shopping
+          rateData={rateData}
           locationInfos={locationInfos}
           setLocationInfos={setLocationInfos}
         ></Shopping>

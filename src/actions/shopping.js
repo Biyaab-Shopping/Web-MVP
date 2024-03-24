@@ -3,13 +3,14 @@ import axios from "axios";
 import * as setting from "../config";
 import countryData from "../google-countries.json";
 import lensCountryData from "../google-lens-countries.json";
+import currencyData from "../currency-symbols-main.json";
 import _ from "lodash";
 
 export async function fetchData(
   loadingReset,
   setLoading,
   searchName,
-  setSearchResult,
+  rateData,
   sorterByFunc,
   locationInfos = [],
   page = 1,
@@ -67,11 +68,11 @@ export async function fetchData(
     } catch (error) {
       console.log(error);
     } finally {
-      setSearchResult({ shopping_results: data });
-      setTimeout(() => {
-        sorterByFunc(data);
-        setLoading(false);
-      }, 150);
+      // setSearchResult({ shopping_results: data });
+      // setTimeout(() => {
+      sorterByFunc(data);
+      setLoading(false);
+      // }, 150);
     }
   }
 }
@@ -79,7 +80,7 @@ export async function fetchData(
 export async function fetchImageRelatedData(
   loadingResetImage,
   setLoading,
-  setSearchResult,
+  rateData,
   sorterByFunc,
   locationInfos = [],
   image
@@ -111,18 +112,27 @@ export async function fetchImageRelatedData(
                 ? Number(
                     (
                       el.price.extracted_value /
-                      (el.price.currency === "$"
-                        ? 1
-                        : locationInfos[i].currencyInfo.rate)
+                      rateData[
+                        _.findKey(currencyData, function (o) {
+                          return (
+                            o.symbol === el.price.currency ||
+                            o.symbol === el.price.value.split(" ")[0]
+                          );
+                        })
+                      ]
                     ).toFixed(2)
                   )
                 : Number(0),
+              // real_price: el.price
+              //   ? el.price.extracted_value.toString() +
+              //     " " +
+              //     (el.price.currency === "$"
+              //       ? "USD"
+              //       : locationInfos[i].currencyInfo.name)
+              //   : "",
               real_price: el.price
-                ? el.price.extracted_value.toString() +
-                  " " +
-                  (el.price.currency === "$"
-                    ? "USD"
-                    : locationInfos[i].currencyInfo.name)
+                ? // ? el.price.currency + " " + el.price.extracted_value.toString()
+                  el.price.value
                 : "",
               locationInfo: i + 1,
             };

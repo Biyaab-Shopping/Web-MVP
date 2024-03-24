@@ -187,26 +187,26 @@ function ShoppingComponent(props) {
     setMode(mode === "text" ? "image" : "text");
   };
 
-  useEffect(() => {
-    mode === "text"
-      ? fetchData(
-          loadingReset,
-          setLoading,
-          searchProduct,
-          setSearchResult,
-          sorterByFunc,
-          locationInfos
-        )
-      : fetchImageRelatedData(
-          loadingReset,
-          setLoading,
-          setSearchResult,
-          sorterByFunc,
-          locationInfos,
-          cropImage()
-        );
-    // eslint-disable-next-line
-  }, [locationInfos]);
+  // useEffect(() => {
+  //   mode === "text"
+  //     ? fetchData(
+  //         loadingReset,
+  //         setLoading,
+  //         searchProduct,
+  //         setSearchResult,
+  //         sorterByFunc,
+  //         locationInfos
+  //       )
+  //     : fetchImageRelatedData(
+  //         loadingReset,
+  //         setLoading,
+  //         setSearchResult,
+  //         sorterByFunc,
+  //         locationInfos,
+  //         cropImage()
+  //       );
+  //   // eslint-disable-next-line
+  // }, [locationInfos]);
 
   const changeSearchProduct = (value) => {
     setSearchProduct(value);
@@ -215,7 +215,7 @@ function ShoppingComponent(props) {
         loadingReset,
         setLoading,
         value,
-        setSearchResult,
+        props.rateData,
         sorterByFunc,
         locationInfos
       );
@@ -255,7 +255,7 @@ function ShoppingComponent(props) {
       fetchImageRelatedData(
         loadingReset,
         setLoading,
-        setSearchResult,
+        props.rateData,
         sorterByFunc,
         locationInfos,
         cropImage()
@@ -429,6 +429,22 @@ function ShoppingComponent(props) {
                         {`price: ${ele.real_price} -> ${ele.usd_price} USD`}
                       </div>
                     )}
+                    {/* {mode === "text" && ele.usd_price !== 0 && (
+                      <div
+                        className="font-weight-bold"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {`price: ${ele.real_price} -> ${ele.usd_price} USD`}
+                      </div>
+                    )}
+                    {mode === "image" && ele.real_price !== "" && (
+                      <div
+                        className="font-weight-bold"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {`price: ${ele.real_price}`}
+                      </div>
+                    )} */}
                   </div>
                   <div
                     className="my-1 px-2"
