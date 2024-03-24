@@ -2,6 +2,8 @@ import axios from "axios";
 
 import * as setting from "../config";
 import countryData from "../google-countries.json";
+import lensCountryData from "../google-lens-countries.json";
+import _ from "lodash";
 
 export async function fetchData(
   loadingReset,
@@ -88,9 +90,9 @@ export async function fetchImageRelatedData(
       loadingResetImage();
       setLoading(true);
       for (let i = 0; i < locationInfos.length; i++) {
-        const countryCode = countryData.find((el) =>
-          el.country_name.includes(locationInfos[i].country)
-        ).country_code;
+        const countryCode = _.findKey(lensCountryData, function (o) {
+          return o === locationInfos[i].country;
+        });
         let response;
         try {
           let formdata = new FormData();
@@ -105,18 +107,22 @@ export async function fetchImageRelatedData(
               ...el,
               rating: el.rating ? el.rating : 0,
               reviews: el.reviews ? el.reviews : 0,
-              usd_price: el.price?.extracted_value
+              usd_price: el.price
                 ? Number(
                     (
                       el.price.extracted_value /
-                      locationInfos[i].currencyInfo.rate
+                      (el.price.currency === "$"
+                        ? 1
+                        : locationInfos[i].currencyInfo.rate)
                     ).toFixed(2)
                   )
                 : Number(0),
-              real_price: el.price?.extracted_value
+              real_price: el.price
                 ? el.price.extracted_value.toString() +
                   " " +
-                  locationInfos[i].currencyInfo.name
+                  (el.price.currency === "$"
+                    ? "USD"
+                    : locationInfos[i].currencyInfo.name)
                 : "",
               locationInfo: i + 1,
             };
@@ -141,4 +147,20 @@ export async function fetchImageRelatedData(
       // }, 150);
     }
   }
+}
+
+export function saveImage(imagelink) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios.post(
+        `${setting.backend}/shopping/saveimage`,
+        {
+          imageUrl: imagelink,
+        }
+      );
+      resolve(response.data.imagePath);
+    } catch (error) {
+      alert("We can't use the link. Please insert another link");
+    }
+  });
 }

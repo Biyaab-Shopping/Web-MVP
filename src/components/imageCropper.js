@@ -1,15 +1,5 @@
-import React, {
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-  useEffect,
-} from "react";
-import ReactCrop, {
-  centerCrop,
-  convertToPixelCrop,
-  makeAspectCrop,
-} from "react-image-crop";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import ReactCrop, { convertToPixelCrop } from "react-image-crop";
 
 import { canvasPreview } from "./canvasPreview";
 import { useDebounceEffect } from "./useDebounceEffect";
@@ -87,6 +77,25 @@ const ImageCropper = (props) => {
     [completedCrop]
   );
 
+  const getCroppedImg = async (image, crop) => {
+    const canvas = document.createElement("canvas");
+
+    canvasPreview(image, canvas, crop);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error("Canvas is empty");
+          return;
+        }
+        onChangeCropImage(blob);
+        window.URL.revokeObjectURL(croppedImage);
+        const croppedImageUrl = window.URL.createObjectURL(blob);
+        resolve(croppedImageUrl);
+      }, "image/jpeg");
+    });
+  };
+
   const makeClientCrop = useCallback(
     async (crop) => {
       const image = imageRef.current;
@@ -119,25 +128,6 @@ const ImageCropper = (props) => {
     },
     [cropString]
   );
-
-  const getCroppedImg = async (image, crop) => {
-    const canvas = document.createElement("canvas");
-
-    canvasPreview(image, canvas, crop);
-
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          console.error("Canvas is empty");
-          return;
-        }
-        onChangeCropImage(blob);
-        window.URL.revokeObjectURL(croppedImage);
-        const croppedImageUrl = window.URL.createObjectURL(blob);
-        resolve(croppedImageUrl);
-      }, "image/jpeg");
-    });
-  };
 
   return (
     <div className="d-flex imag-crop-part align-items-center justify-content-center">

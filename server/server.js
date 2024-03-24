@@ -6,6 +6,7 @@ const createUule = require("create-uule");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const bodyParser = require("body-parser");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -24,6 +25,12 @@ const upload = multer({ storage: storage });
 require("dotenv").config();
 
 app.use(cors());
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// parse application/json
+app.use(bodyParser.json());
+
 app.use("/api/static", express.static(path.join(__dirname, "uploads")));
 
 app.get("/api/shopping/:country/:location/:product", (req, res) => {
@@ -74,4 +81,30 @@ app.post(
       });
   }
 );
+
+app.post("/api/shopping/saveimage", async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    const response = await axios.get(imageUrl, {
+      responseType: "stream",
+    });
+
+    const imageName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const imagePath = path.join(__dirname, "uploads", imageName); // Path to save the image
+
+    // Create a writable stream and pipe the image data to it
+    const writer = fs.createWriteStream(imagePath);
+    response.data.pipe(writer);
+
+    // Wait for the writer to finish writing the image
+    await new Promise((resolve, reject) => {
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
+    res.json({ imagePath: `${process.env.BackendLink}static/${imageName}` });
+  } catch (error) {
+    console.error("Error saving image:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 app.listen(5000);

@@ -12,7 +12,11 @@ import map from "../assests/map.png";
 import lensIcon from "../assests/lens.png";
 import textIcon from "../assests/text_icon.png";
 
-import { fetchData, fetchImageRelatedData } from "../actions/shopping";
+import {
+  fetchData,
+  fetchImageRelatedData,
+  saveImage,
+} from "../actions/shopping";
 
 // import Carousel from "@moxy/react-carousel";
 
@@ -44,6 +48,8 @@ function ShoppingComponent(props) {
   const [sorterBy, setSorterBy] = useState(sorterBys[0]);
   const [sorter, setSorter] = useState(true);
   const [selectImage, setSelectImage] = useState(null);
+  const [imageLinkValue, setImageLinkValue] = useState("");
+  const [imageLink, setImageLink] = useState("");
 
   function loadingReset() {
     setDisplayData([]);
@@ -176,6 +182,8 @@ function ShoppingComponent(props) {
     setSearchProduct("");
     cropImage(null);
     setSelectImage(null);
+    setImageLink("");
+    setImageLinkValue("");
     setMode(mode === "text" ? "image" : "text");
   };
 
@@ -218,6 +226,19 @@ function ShoppingComponent(props) {
 
   const handleUploadImage = (file) => {
     setSelectImage(file);
+  };
+
+  const onChangeImageLink = (e) => {
+    setImageLinkValue(e.target.value);
+  };
+
+  const onCheckImageLink = async () => {
+    try {
+      const link = await saveImage(imageLinkValue);
+      setImageLink(link);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const onChangeCropImage = (file) => {
@@ -409,7 +430,10 @@ function ShoppingComponent(props) {
                       </div>
                     )}
                   </div>
-                  <div className="my-1 px-2" style={{ height: "100%" }}>
+                  <div
+                    className="my-1 px-2"
+                    style={{ height: mode === "text" ? "100%" : "auto" }}
+                  >
                     <a
                       href={ele.link}
                       style={{ textDecoration: "none" }}
@@ -422,7 +446,7 @@ function ShoppingComponent(props) {
                           style={{
                             maxWidth: "20px",
                             maxHeight: "20px",
-                            marginRight: "5px",
+                            marginRight: "10px",
                           }}
                         ></img>
                       )}
@@ -486,7 +510,7 @@ function ShoppingComponent(props) {
         <Col
           xl={3}
           className="mb-3 order-xl-1 order-2"
-          style={{ maxHeight: "250px", overflowY: "auto" }}
+          style={{ maxHeight: "100px", overflowY: "auto" }}
         >
           {locationPart}
         </Col>
@@ -551,7 +575,7 @@ function ShoppingComponent(props) {
             </Col>
           </Row>
         ) : null
-      ) : selectImage === null ? (
+      ) : selectImage !== null || imageLink !== "" ? null : (
         <Row className="justify-content-center py-3">
           <Col xl={4}>
             <div className="image-drop-part p-3">
@@ -601,10 +625,18 @@ function ShoppingComponent(props) {
                 </div>
                 <Row className="">
                   <Col sm={9}>
-                    <Form.Control placeholder="Paste image link" />
+                    <Form.Control
+                      placeholder="Paste image link"
+                      value={imageLinkValue}
+                      onChange={onChangeImageLink}
+                    />
                   </Col>
                   <Col sm={3} className="mt-md-0 mt-2">
-                    <Button className="w-full" style={{ width: "100%" }}>
+                    <Button
+                      className="w-full"
+                      style={{ width: "100%" }}
+                      onClick={onCheckImageLink}
+                    >
                       Search
                     </Button>
                   </Col>
@@ -613,7 +645,7 @@ function ShoppingComponent(props) {
             </div>
           </Col>
         </Row>
-      ) : null}
+      )}
 
       {mode === "text" ? (
         searchProduct === "" ? (
@@ -629,11 +661,13 @@ function ShoppingComponent(props) {
         ) : (
           productsPart
         )
-      ) : selectImage === null ? null : (
+      ) : selectImage === null && imageLink === "" ? null : (
         <Row>
           <Col md={4} className="crop-image-parent">
             <ImageCropper
-              src={URL.createObjectURL(selectImage)}
+              src={
+                imageLink !== "" ? imageLink : URL.createObjectURL(selectImage)
+              }
               onChangeCropImage={onChangeCropImage}
             />
           </Col>
