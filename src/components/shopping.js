@@ -571,18 +571,19 @@ function ShoppingComponent(props) {
           className="order-3 d-flex justify-content-end align-items-center"
         >
           {mode === "text" && searchProduct !== "" ? (
-            <>
-              <SearchInput
-                searchValue={searchProduct}
-                setSearchValue={changeSearchProduct}
-              ></SearchInput>
-              <div
-                style={{ cursor: "pointer", marginLeft: "10px" }}
-                onClick={handleChangeMode}
-              >
-                <img src={lensIcon} alt="icon" height={30}></img>
-              </div>
-            </>
+            <SearchInput
+              searchValue={searchProduct}
+              setSearchValue={changeSearchProduct}
+              addButton={
+                <div
+                  className="search_button"
+                  style={{ cursor: "pointer" }}
+                  onClick={handleChangeMode}
+                >
+                  <img src={lensIcon} alt="icon" height={25}></img>
+                </div>
+              }
+            ></SearchInput>
           ) : null}
           {mode === "image" && selectImage && (
             <>
