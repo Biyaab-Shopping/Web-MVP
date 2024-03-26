@@ -8,12 +8,15 @@
   border: solid 1px #8a84e3;
   border-radius: 5px;
 }
-
+.search_input .input-group-text {
+  padding: 1px;
+}
 .search_input .search_button {
   padding: 5px;
   transition-duration: 200ms;
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 3px;
+  background-color: white;
 }
 
 .search_input .search_button:hover {
