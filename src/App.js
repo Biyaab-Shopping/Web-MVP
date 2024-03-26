@@ -63,6 +63,7 @@ function App() {
     fetchRateData();
   }, []);
 
+  document.title = "Biyaab.com";
   return (
     <div className="App">
       <Container>

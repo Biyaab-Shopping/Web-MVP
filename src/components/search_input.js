@@ -2,7 +2,7 @@ import { Form, InputGroup } from "react-bootstrap";
 import ZoomIcon from "../assests/zoom_icon.png";
 import { useEffect, useState } from "react";
 function Search_Input(props) {
-  const { name } = props;
+  const { name, addButton } = props;
   const [searchValue, setSearchValue] = useState(props.searchValue);
   useEffect(() => {
     setSearchValue(props.searchValue);
@@ -37,6 +37,15 @@ function Search_Input(props) {
             <img src={ZoomIcon} alt="zoom_icon" height={20}></img>
           </div>
         </InputGroup.Text>
+        {addButton && (
+          <InputGroup.Text
+            id="basic-addon2"
+            className="border-0 bg-white "
+            style={{ paddingLeft: "5px" }}
+          >
+            {addButton}
+          </InputGroup.Text>
+        )}
       </InputGroup>
     </div>
   );

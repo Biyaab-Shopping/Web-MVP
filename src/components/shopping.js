@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import _ from "lodash";
 
 import { Row, Col, Pagination, Dropdown, Form, Button } from "react-bootstrap";
@@ -34,7 +34,17 @@ const cropImage = (image) => {
 
 function ShoppingComponent(props) {
   const sorterBys = ["price", "rating", "reviews", "source"];
-  const fileTypes = ["JPG", "PNG"];
+  const fileTypes = [
+    "JPG",
+    "PNG",
+    "JPEG",
+    "PJPEG",
+    "TIF",
+    "WEBP",
+    "TIFF",
+    "ICO",
+    "BMP",
+  ];
   const pageSizes = [20, 40, 60, 80];
   const { locationInfos, setLocationInfos } = props;
   const [mode, setMode] = useState("text");
@@ -50,6 +60,8 @@ function ShoppingComponent(props) {
   const [selectImage, setSelectImage] = useState(null);
   const [imageLinkValue, setImageLinkValue] = useState("");
   const [imageLink, setImageLink] = useState("");
+
+  const productsPartRef = useRef(null);
 
   function loadingReset() {
     setDisplayData([]);
@@ -162,6 +174,9 @@ function ShoppingComponent(props) {
 
   const onChangePage = (val) => {
     setPage(val);
+    const el = productsPartRef.current;
+    const top = window.pageYOffset + el.getBoundingClientRect().top;
+    window.scrollTo(0, top);
   };
   const onChangePageSize = (eventKey) => {
     setPageSize(Number(eventKey));
@@ -185,6 +200,15 @@ function ShoppingComponent(props) {
     setImageLink("");
     setImageLinkValue("");
     setMode(mode === "text" ? "image" : "text");
+  };
+
+  const removeSelectImage = () => {
+    loadingReset();
+    setLoading(false);
+    cropImage(null);
+    setSelectImage(null);
+    setImageLink("");
+    setImageLinkValue("");
   };
 
   // useEffect(() => {
@@ -368,7 +392,7 @@ function ShoppingComponent(props) {
 
   const productsPart = useMemo(() => {
     return (
-      <Row>
+      <Row ref={productsPartRef}>
         {/* <Col md={3}></Col> */}
         <Col md={12}>
           {pageCount > 0 ? paginationPart() : null}
@@ -534,11 +558,13 @@ function ShoppingComponent(props) {
           xl={6}
           className="d-flex justify-content-center mb-3 order-1 order-xl-2"
         >
-          <img
-            src={image1}
-            alt="image1"
-            style={{ height: searchProduct !== "" ? "100px" : "100px" }}
-          ></img>
+          <a href="/">
+            <img
+              src={image1}
+              alt="image1"
+              style={{ height: searchProduct !== "" ? "100px" : "100px" }}
+            ></img>
+          </a>
         </Col>
         <Col
           xl={3}
@@ -559,12 +585,20 @@ function ShoppingComponent(props) {
             </>
           ) : null}
           {mode === "image" && selectImage && (
-            <div
-              style={{ cursor: "pointer", marginLeft: "10px" }}
-              onClick={handleChangeMode}
-            >
-              <img src={textIcon} alt="icon" height={30}></img>
-            </div>
+            <>
+              <div
+                style={{ cursor: "pointer", marginLeft: "10px" }}
+                onClick={handleChangeMode}
+              >
+                <img src={textIcon} alt="icon" height={30}></img>
+              </div>
+              <div
+                style={{ cursor: "pointer", marginLeft: "10px" }}
+                onClick={removeSelectImage}
+              >
+                <img src={lensIcon} alt="icon" height={30}></img>
+              </div>
+            </>
           )}
         </Col>
       </Row>
@@ -580,13 +614,16 @@ function ShoppingComponent(props) {
                 <SearchInput
                   searchValue={searchProduct}
                   setSearchValue={changeSearchProduct}
+                  addButton={
+                    <div
+                      className="search_button"
+                      style={{ cursor: "pointer" }}
+                      onClick={handleChangeMode}
+                    >
+                      <img src={lensIcon} alt="icon" height={25}></img>
+                    </div>
+                  }
                 ></SearchInput>
-              </div>
-              <div
-                style={{ cursor: "pointer", marginLeft: "10px" }}
-                onClick={handleChangeMode}
-              >
-                <img src={lensIcon} alt="icon" height={30}></img>
               </div>
             </Col>
           </Row>
