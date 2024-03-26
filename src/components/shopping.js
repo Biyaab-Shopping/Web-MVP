@@ -258,8 +258,12 @@ function ShoppingComponent(props) {
 
   const onCheckImageLink = async () => {
     try {
-      const link = await saveImage(imageLinkValue);
-      setImageLink(link);
+      if (imageLinkValue === "") {
+        alert("Please input the link of image and then click search button.");
+      } else {
+        const link = await saveImage(imageLinkValue);
+        setImageLink(link);
+      }
     } catch (error) {
       console.log(error);
     }
