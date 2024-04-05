@@ -413,7 +413,7 @@ function ShoppingComponent(props) {
                   <div className="border-bottom p-2" style={{ height: "100%" }}>
                     <div className="d-flex justify-content-center">
                       {mode === "text" ? (
-                        <a href={ele.product_link}>
+                        <a href={ele.product_link} target="_blank">
                           <img
                             src={ele.thumbnail}
                             alt={ele.title}
@@ -480,6 +480,7 @@ function ShoppingComponent(props) {
                   >
                     <a
                       href={ele.link}
+                      target="_blank"
                       style={{ textDecoration: "none" }}
                       className="d-flex align-items-center"
                     >
@@ -530,6 +531,7 @@ function ShoppingComponent(props) {
                       <a
                         className="py-1"
                         href={ele.comparison_link}
+                        target="_blank"
                         style={{ textDecoration: "none" }}
                       >
                         Compares prices from {ele.number_of_comparisons}
