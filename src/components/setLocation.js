@@ -176,12 +176,15 @@ function SetLocationComponent(props) {
       const response = await axios.get(
         `https://restcountries.com/v3.1/name/${countryFullName}`
       );
-      const countryInfo = response.data[response.data.length - 1];
+      const countryInfo = response.data.find(
+        (e) => e.name.common === countryFullName
+      );
       const currencyName = JSON.stringify(countryInfo.currencies)
         .split(":")[0]
         .slice(2)
         .slice(0, -1);
-      setCountry(countryInfo.name.common);
+      // setCountry(countryInfo.name.common);
+      setCountry(countryFullName);
       setCurrency({
         name: currencyName,
         symbol: countryInfo.currencies[currencyName].symbol,
