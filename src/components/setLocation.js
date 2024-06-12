@@ -1,7 +1,13 @@
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import countryToCurrency from "country-to-currency";
+
+import CountryData from "../google-countries.json";
+import CurrencyData from "../currency-symbols.json";
+
 import { Button, Col, Row } from "react-bootstrap";
+
 import MapComponent from "./googl_map";
 import SearchInput from "./search_input";
 
@@ -129,24 +135,28 @@ function SetLocationComponent(props) {
                 if (component.types.includes("country")) {
                   country = component.long_name;
                 }
-                if (component.types.includes("locality")) {
-                  locality = component.long_name;
-                }
-                if (
-                  component.types.includes("administrative_area_level_1") ||
-                  component.types.includes("administrative_area_level_2") ||
-                  component.types.includes("administrative_area_level_3")
-                ) {
-                  area = component.long_name;
-                }
+                // if (component.types.includes("locality")) {
+                //   locality = component.long_name;
+                // }
+                // if (
+                //   component.types.includes("administrative_area_level_1") ||
+                //   component.types.includes("administrative_area_level_2") ||
+                //   component.types.includes("administrative_area_level_3")
+                // ) {
+                //   area = component.long_name;
+                // }
 
-                if (country !== "" && locality !== "" && area !== "") break;
+                // if (country !== "" && locality !== "" && area !== "") break;
+                if (country !== "") {
+                  pointName = ele.formatted_address;
+                  break;
+                }
               }
-
-              if (country !== "" && locality !== "" && area !== "") {
-                pointName = `${area}, ${locality}, ${country}`;
-                break;
-              }
+              if (country !== "") break;
+              // if (country !== "" && locality !== "" && area !== "") {
+              //   pointName = `${area}, ${locality}, ${country}`;
+              //   break;
+              // }
             }
 
             // const pointName = response.data.results[0].formatted_address;
@@ -173,21 +183,34 @@ function SetLocationComponent(props) {
 
   const currecyFunc = async (countryFullName) => {
     try {
-      const response = await axios.get(
-        `https://restcountries.com/v3.1/name/${countryFullName}`
-      );
-      const countryInfo = response.data.find(
-        (e) => e.name.common === countryFullName
-      );
-      const currencyName = JSON.stringify(countryInfo.currencies)
-        .split(":")[0]
-        .slice(2)
-        .slice(0, -1);
+      // const response = await axios.get(
+      //   `https://restcountries.com/v3.1/name/${countryFullName}`
+      // );
+      // const countryInfo = response.data.find(
+      //   (e) => e.name.common === countryFullName
+      // );
+      // const currencyName = JSON.stringify(countryInfo.currencies)
+      //   .split(":")[0]
+      //   .slice(2)
+      //   .slice(0, -1);
       // setCountry(countryInfo.name.common);
+
+      const countryCode =
+        countryFullName === "United Kingdom"
+          ? "gb"
+          : CountryData.reverse().find((el) =>
+              el.country_name.includes(countryFullName)
+            ).country_code;
+      const currencyCode = countryToCurrency[countryCode.toUpperCase()];
+      const currencySymbol = CurrencyData[currencyCode];
       setCountry(countryFullName);
+      // setCurrency({
+      //   name: currencyName,
+      //   symbol: countryInfo.currencies[currencyName].symbol,
+      // });
       setCurrency({
-        name: currencyName,
-        symbol: countryInfo.currencies[currencyName].symbol,
+        name: currencyCode,
+        symbol: currencySymbol,
       });
     } catch (error) {}
   };

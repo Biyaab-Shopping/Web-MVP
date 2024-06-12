@@ -3737,6 +3737,11 @@ cosmiconfig@^7.0.0:
     path-type "^4.0.0"
     yaml "^1.10.0"
 
+country-to-currency@^1.1.5:
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/country-to-currency/-/country-to-currency-1.1.5.tgz#9ba009b0be8e1a667abbcd6e47bca07ec2a7e619"
+  integrity sha512-IrIKgWA/B/gY6CF4JX45N1MixXHmk63eHF+0OjeFctx5OFR+VH5M/EQ0HGFuv8lz+Z1sLfSSFmuyZPfqI/9TYA==
+
 create-uule@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/create-uule/-/create-uule-1.0.3.tgz#066a30f57e1a8aa55114f716c603577206dde7a5"
