@@ -133,7 +133,10 @@ function SetLocationComponent(props) {
             for (const ele of response.data.results) {
               for (const component of ele.address_components) {
                 if (component.types.includes("country")) {
-                  country = component.long_name;
+                  country = CountryData.find(
+                    (el) =>
+                      el.country_code === component.short_name.toLowerCase()
+                  ).country_name;
                 }
                 // if (component.types.includes("locality")) {
                 //   locality = component.long_name;
