@@ -58,10 +58,35 @@ function canUseVercelBlob() {
 const BLOB_SETUP_HINT =
   "Connect a Vercel Blob store to this project (Storage → Blob → Connect to Project), then redeploy.";
 
+function getBlobAccess() {
+  return process.env.BLOB_ACCESS === "public" ? "public" : "private";
+}
+
+async function getBlobReadableUrl(blob) {
+  if (getBlobAccess() === "public") {
+    return blob.url;
+  }
+
+  const { issueSignedToken, presignUrl } = require("@vercel/blob");
+  const validUntil = Date.now() + 10 * 60 * 1000;
+  const token = await issueSignedToken({
+    pathname: blob.pathname,
+    operations: ["get"],
+    validUntil,
+  });
+  const { presignedUrl } = await presignUrl(token, {
+    pathname: blob.pathname,
+    operation: "get",
+    access: "private",
+    validUntil,
+  });
+  return presignedUrl;
+}
+
 async function uploadToVercelBlob(buffer, filename, contentType) {
   const { put } = require("@vercel/blob");
   const options = {
-    access: "public",
+    access: getBlobAccess(),
     contentType,
     addRandomSuffix: true,
   };
@@ -69,7 +94,7 @@ async function uploadToVercelBlob(buffer, filename, contentType) {
     options.token = process.env.BLOB_READ_WRITE_TOKEN;
   }
   const blob = await put(filename, buffer, options);
-  return blob.url;
+  return getBlobReadableUrl(blob);
 }
 
 async function uploadToDisk(buffer, filename) {
