@@ -14,10 +14,19 @@ const bodyParser = require("body-parser");
 const app = express();
 const isVercel = process.env.VERCEL === "1";
 const PORT = process.env.PORT || 5000;
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = isVercel ? null : path.join(__dirname, "uploads");
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+function ensureUploadsDir() {
+  if (!uploadsDir) {
+    return;
+  }
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+}
+
+if (!isVercel) {
+  ensureUploadsDir();
 }
 
 function getApiBaseUrl() {
@@ -64,6 +73,10 @@ async function uploadToVercelBlob(buffer, filename, contentType) {
 }
 
 async function uploadToDisk(buffer, filename) {
+  if (isVercel) {
+    throw new Error(`Vercel Blob is not configured. ${BLOB_SETUP_HINT}`);
+  }
+  ensureUploadsDir();
   const filePath = path.join(uploadsDir, filename);
   fs.writeFileSync(filePath, buffer);
   return buildStaticImageUrl(filename);
@@ -102,6 +115,7 @@ const upload = multer({
     ? multer.memoryStorage()
     : multer.diskStorage({
         destination: function (req, file, cb) {
+          ensureUploadsDir();
           cb(null, uploadsDir);
         },
         filename: function (req, file, cb) {
@@ -123,6 +137,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get("/api/static/:filename", (req, res) => {
+  if (!uploadsDir) {
+    return res.status(404).json({ error: "File not found" });
+  }
   const filePath = path.join(uploadsDir, req.params.filename);
   if (fs.existsSync(filePath)) {
     return res.sendFile(filePath);
