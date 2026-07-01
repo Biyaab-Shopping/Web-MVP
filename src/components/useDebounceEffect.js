@@ -9,5 +9,7 @@ export function useDebounceEffect(fn, waitTime, deps) {
     return () => {
       clearTimeout(t);
     };
+    // Custom hook: caller supplies the dependency array via `deps`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

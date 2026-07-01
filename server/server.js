@@ -8,6 +8,13 @@ const path = require("path");
 const fs = require("fs");
 const bodyParser = require("body-parser");
 
+function buildStaticImageUrl(filename) {
+  const base = (
+    process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/api"
+  ).replace(/\/$/, "");
+  return `${base}/static/${filename}`;
+}
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, "uploads"));
@@ -22,7 +29,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 app.use(cors());
 // parse application/x-www-form-urlencoded
@@ -33,12 +40,29 @@ app.use(bodyParser.json());
 
 app.use("/api/static", express.static(path.join(__dirname, "uploads")));
 
+app.get("/api/rates", async (req, res) => {
+  const appId =
+    process.env.OPEN_EXCHANGE_APP_ID;
+  if (!appId) {
+    return res.status(500).json({ error: "Missing OPEN_EXCHANGE_APP_ID in .env" });
+  }
+  try {
+    const response = await axios.get(
+      `https://openexchangerates.org/api/latest.json?app_id=${appId}`
+    );
+    res.json(response.data.rates);
+  } catch (error) {
+    console.error("Failed to fetch exchange rates:", error.response?.data || error);
+    res.status(500).json({ error: "Failed to fetch exchange rates" });
+  }
+});
+
 app.get("/api/shopping/:country/:location/:product", (req, res) => {
   const uule = createUule(req.params.location);
   const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(
     req.params.product
   )}&uule=${uule}&hl=en&gl=${req.params.country}&api_key=${
-    process.env.SerpApiKey
+    process.env.SERP_API_KEY
   }&start=${req.query.start}&num=${req.query.num}`;
   console.log(url);
   axios({
@@ -57,28 +81,39 @@ app.get("/api/shopping/:country/:location/:product", (req, res) => {
 app.post(
   "/api/shopping/:country/:location",
   upload.single("object"),
-  (req, res) => {
-    const uule = createUule(req.params.location);
-    const url = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(
-      process.env.BackendLink + "static/" + req.file.filename
-    )}&uule=${uule}&hl=en&country=${req.params.country}&api_key=${
-      process.env.SerpApiKey
-    }`;
-    console.log(url);
-    axios({
-      method: "get",
-      url: url,
-    })
-      .then(function (response) {
-        res.json(response.data);
-      })
-      .catch((error) => {
-        console.log(error.response.data);
-        res.status(400).json(error.response.data);
-      })
-      .finally(function () {
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image uploaded." });
+    }
+
+    try {
+      const uule = createUule(req.params.location);
+      const imageUrl = buildStaticImageUrl(req.file.filename);
+      console.log(imageUrl);
+      const url = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(
+        imageUrl
+      )}&uule=${uule}&hl=en&country=${req.params.country}&api_key=${
+        process.env.SERP_API_KEY
+      }`;
+      console.log(url);
+
+      const response = await axios.get(url);
+      if (response.data.error) {
+        return res.status(400).json(response.data);
+      }
+      res.json(response.data);
+    } catch (error) {
+      const message =
+        error.response?.data?.error ||
+        error.message ||
+        "Image search failed.";
+      console.log(error.response?.data || error.message);
+      res.status(400).json({ error: message });
+    } finally {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
-      });
+      }
+    }
   }
 );
 
@@ -101,7 +136,7 @@ app.post("/api/shopping/saveimage", async (req, res) => {
       writer.on("finish", resolve);
       writer.on("error", reject);
     });
-    res.json({ imagePath: `${process.env.BackendLink}static/${imageName}` });
+    res.json({ imagePath: buildStaticImageUrl(imageName) });
   } catch (error) {
     console.error("Error saving image:", error);
     res.status(500).json({ error: "Internal Server Error" });

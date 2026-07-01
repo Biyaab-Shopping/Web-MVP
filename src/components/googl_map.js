@@ -1,21 +1,28 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Map, Marker, GoogleApiWrapper } from "google-maps-react";
-import * as setting from "../config";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+
+const libraries = ["marker"];
+const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+const googleMapsMapId =
+  process.env.REACT_APP_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
 
 function MapContainer(props) {
   const {
-    _mapStyle,
-    // setMapLoading,
-    setGoogleService,
-    setGoogle,
-    // _mapConfig,
+    _mapConfig,
     mapRef,
-    // clickable,
     markers,
     setMarkers,
   } = props;
 
   const [mapData, setMapData] = useState(null);
+  const markerRefs = useRef([]);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "biyaab-google-map",
+    googleMapsApiKey,
+    version: "weekly",
+    libraries,
+  });
 
   const containerStyle = {
     width:
@@ -24,90 +31,104 @@ function MapContainer(props) {
     maxWidth: "100%",
   };
 
-  const mapClicked = (mapProps, map, clickEvent) => {
-    setMarkers([
-      {
-        lat: clickEvent.latLng.lat(),
-        lng: clickEvent.latLng.lng(),
-      },
-    ]);
-  };
+  const mapOptions = useMemo(
+    () => ({
+      mapId: googleMapsMapId,
+      keyboardShortcuts: false,
+      zoomControl: false,
+      scaleControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      mapTypeControl: false,
+    }),
+    []
+  );
 
-  useEffect(() => {
-    if (mapData !== null) {
-      mapData.setOptions({
-        styles: _mapStyle,
-      });
-    }
-  }, [mapData, _mapStyle]);
+  const mapClicked = useCallback(
+    (clickEvent) => {
+      setMarkers([
+        {
+          lat: clickEvent.latLng.lat(),
+          lng: clickEvent.latLng.lng(),
+        },
+      ]);
+    },
+    [setMarkers]
+  );
 
   const mapLoaded = useCallback(
-    (mapProps, map) => {
-      const { google } = mapProps;
-      setGoogle(google);
-      const service = new google.maps.places.PlacesService(map);
-      setGoogleService(service);
+    (map) => {
       setMapData(map);
-      // _mapCenterChanged(mapProps, map);
-      console.log(map.center.lat());
+      if (mapRef) {
+        mapRef.current = { map };
+      }
+      if (window.google) {
+        window.google.maps.event.trigger(map, "resize");
+      }
     },
-    [
-      setGoogleService,
-      setGoogle,
-      // _mapCenterChanged
-    ]
+    [mapRef]
   );
 
-  const Markers = useMemo(() => {
-    return markers.map((marker, index) => {
-      return <Marker key={index} name={"position"} position={marker}></Marker>;
+  useEffect(() => {
+    if (!mapData || !window.google?.maps?.marker) return;
+
+    markerRefs.current.forEach((marker) => {
+      marker.map = null;
     });
-  }, [markers]);
+    markerRefs.current = [];
+
+    markers.forEach((marker) => {
+      const advancedMarker = new window.google.maps.marker.AdvancedMarkerElement({
+        map: mapData,
+        position: {
+          lat: Number(marker.lat),
+          lng: Number(marker.lng),
+        },
+      });
+      markerRefs.current.push(advancedMarker);
+    });
+
+    return () => {
+      markerRefs.current.forEach((marker) => {
+        marker.map = null;
+      });
+      markerRefs.current = [];
+    };
+  }, [mapData, markers]);
+
+  if (!googleMapsApiKey) {
+    return (
+      <div className="p-3 border rounded text-danger">
+        Missing <code>REACT_APP_GOOGLE_MAPS_API_KEY</code> in <code>.env</code>.
+        Restart the dev server after updating environment variables.
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-3 border rounded text-danger">
+        Failed to load Google Maps. Check your API key, billing, and enabled APIs
+        in Google Cloud Console.
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return <div>Loading map...</div>;
+  }
 
   return (
-    <>
-      <Map
-        ref={mapRef}
-        id="mapDom"
-        keyboardShortcuts={false}
-        google={props.google}
-        zoomControl={false}
-        scaleControl={false}
-        streetViewControl={false}
-        fullscreenControl={false}
-        mapTypeControl={false}
-        zoom={props._mapConfig.zoom}
-        // style={MapContainer.mapStyle}
-        containerStyle={containerStyle}
-        initialCenter={props._mapConfig.center}
-        onReady={mapLoaded}
-        onZoomChanged={props._mapZoomChanged}
-        // onCenterChanged={props._mapCenterChanged}
-        // onTilesloaded={setMapLoading(false)}
-        onClick={mapClicked}
-        // centerAroundCurrentLocation={true}
-      >
-        {/* <Marker name={"current location"} /> */}
-        {Markers}
-      </Map>
-    </>
+    <GoogleMap
+      id="mapDom"
+      mapContainerStyle={containerStyle}
+      center={_mapConfig.center}
+      zoom={_mapConfig.zoom}
+      options={mapOptions}
+      onLoad={mapLoaded}
+      onClick={mapClicked}
+    />
   );
-  // return mapRender;
 }
 
-// MapContainer.defaultProps = googleMapStyles;
-
-MapContainer.defautlProps = {
-  clickable: true,
-};
-
-const LoadingContainer = (props) => <div>Fancy loading container!</div>;
-
-export default GoogleApiWrapper((props) => {
-  return {
-    apiKey: setting.apiKey,
-    LoadingContainer: LoadingContainer,
-    // language: props.language,
-    version: "3.56",
-  };
-})(MapContainer);
+export default MapContainer;

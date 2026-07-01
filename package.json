@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@moxy/react-carousel": "^0.1.10",
+    "@react-google-maps/api": "^2.20.8",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
@@ -16,7 +17,6 @@
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
     "global": "^4.4.0",
-    "google-maps-react": "^2.0.6",
     "html2canvas": "^1.4.1",
     "lodash": "^4.17.21",
     "multer": "^1.4.5-lts.1",
@@ -54,5 +54,7 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+  }
 }

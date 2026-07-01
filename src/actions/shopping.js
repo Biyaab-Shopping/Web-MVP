@@ -1,10 +1,11 @@
 import axios from "axios";
 
-import * as setting from "../config";
-import countryData from "../google-countries.json";
 import lensCountryData from "../google-lens-countries.json";
 import currencyData from "../currency-symbols-main.json";
+import { resolveCountryCode } from "../utils/countryCode";
 import _ from "lodash";
+
+const backend = process.env.REACT_APP_BACKEND_URL;
 
 export async function fetchData(
   loadingReset,
@@ -23,13 +24,15 @@ export async function fetchData(
       loadingReset();
       setLoading(true);
       for (let i = 0; i < locationInfos.length; i++) {
-        const countryCode = countryData.find((el) =>
-          el.country_name.includes(locationInfos[i].country)
-        ).country_code;
+        const countryCode = resolveCountryCode(locationInfos[i]);
+        if (!countryCode) {
+          alert(`Could not resolve country for "${locationInfos[i].country}".`);
+          continue;
+        }
         let response;
         try {
           response = await axios.get(
-            `${setting.backend}/shopping/${countryCode}/${
+            `${backend}/shopping/${countryCode}/${
               locationInfos[i].locationName
             }/${encodeURIComponent(searchName)}?start=${
               (page - 1) * num
@@ -91,18 +94,30 @@ export async function fetchImageRelatedData(
       loadingResetImage();
       setLoading(true);
       for (let i = 0; i < locationInfos.length; i++) {
-        const countryCode = _.findKey(lensCountryData, function (o) {
-          return o === locationInfos[i].country;
-        });
+        const countryCode =
+          resolveCountryCode(locationInfos[i]) ||
+          _.findKey(lensCountryData, function (o) {
+            return o === locationInfos[i].country;
+          });
+        if (!countryCode) {
+          alert(`Could not resolve country for "${locationInfos[i].country}".`);
+          continue;
+        }
         let response;
         try {
           let formdata = new FormData();
           formdata.append("object", image);
           response = await axios.post(
-            `${setting.backend}/shopping/${countryCode}/${locationInfos[i].locationName}`,
+            `${backend}/shopping/${countryCode}/${locationInfos[i].locationName}`,
             formdata
           );
           if (response.data.error) throw response.data.error;
+          if (!response.data.visual_matches?.length) {
+            throw (
+              response.data.error ||
+              "Google Lens hasn't returned any results for this query."
+            );
+          }
           let visual_matches = response.data.visual_matches.map((el) => {
             return {
               ...el,
@@ -165,7 +180,7 @@ export function saveImage(imagelink) {
   return new Promise(async (resolve, reject) => {
     try {
       const response = await axios.post(
-        `${setting.backend}/shopping/saveimage`,
+        `${backend}/shopping/saveimage`,
         {
           imageUrl: imagelink,
         }

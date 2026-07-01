@@ -122,18 +122,18 @@ const ImageCropper = (props) => {
     });
   };
 
-  useEffect(
-    (state) => {
-      async function run() {
-        console.log("cropString:", cropString);
-        await delayFunc();
-        const { width, height } = imageRef.current;
-        makeClientCrop(convertToPixelCrop(crop, width, height));
-      }
-      if (imageLoadFlag) run();
-    },
-    [cropString]
-  );
+  useEffect(() => {
+    async function run() {
+      console.log("cropString:", cropString);
+      await delayFunc();
+      if (!imageRef.current) return;
+      const { width, height } = imageRef.current;
+      makeClientCrop(convertToPixelCrop(crop, width, height));
+    }
+    if (imageLoadFlag) run();
+    // Intentionally keyed on cropString only (fires after crop completes).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cropString]);
 
   return (
     <div className="d-flex imag-crop-part align-items-center justify-content-center">

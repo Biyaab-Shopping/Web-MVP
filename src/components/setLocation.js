@@ -11,7 +11,9 @@ import { Button, Col, Row } from "react-bootstrap";
 import MapComponent from "./googl_map";
 import SearchInput from "./search_input";
 
-import * as setting from "../config";
+import { normalizeGlCode } from "../utils/countryCode";
+
+const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
 function SetLocationComponent(props) {
   const {
@@ -24,80 +26,66 @@ function SetLocationComponent(props) {
     setMarkers,
   } = props;
 
-  const [googleService, setGoogleService] = useState(null);
-  const [google, setGoogle] = useState(null);
-  const [mounted, setMounted] = useState(false);
   const [country, setCountry] = useState("");
   const [pointLocationName, setPointLocationName] = useState("");
-  const [currency, setCurrency] = useState({ name: "USD", symbol: "$" });
+  const [currency, setCurrency] = useState({ name: "", symbol: "" });
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
-  // const [mapLoading, setMapLoading] = useState(true);
   const [locationName, setLocationName] = useState("");
-  // const [mapConfig, setMapConfig] = useState({
-  //   // center: {},
-  //   center: { lat: 37.7, lng: -122.4 },
-  //   zoom: 8,
-  // });
-  // const [markers, setMarkers] = useState([
-  //   {
-  //     lat: 37.7,
-  //     lng: -122.4,
-  //   },
-  // ]);
-
-  const [markersJsonString, setMarkersJsonString] = useState(
-    JSON.stringify(markers)
-  );
 
   const mapRef = useRef(null);
+  const geocodeRequestId = useRef(0);
+  const locationMetaRef = useRef({
+    country: "",
+    countryCode: "",
+    pointLocationName: "",
+  });
 
-  const MapZoomChanged = (mapProps, map) => {
-    setMapConfig({
-      ...mapConfig,
-      zoom: map.zoom,
-      // center: map.center,
-      center: { lat: map.center.lat(), lng: map.center.lng() },
-    });
-  };
+  const applyLocationDetails = useCallback(
+    (countryName, resolvedCountryCode, pointName) => {
+      const code =
+        resolvedCountryCode ||
+        (countryName === "United Kingdom"
+          ? "gb"
+          : CountryData.find((el) => el.country_name === countryName)
+              ?.country_code);
+      const currencyCode = countryToCurrency[code?.toUpperCase()];
+      const currencySymbol = CurrencyData[currencyCode];
 
-  const findLocaionFunc = (value) => {
-    if (value !== "") {
-      const request = {
-        // location: mapConfig.center,
-        // radius: '500',
-        // type: ['food']
-        query: value,
-        fields: ["name", "geometry"],
-      };
-      // setMapLoading(true);
-      googleService.findPlaceFromQuery(request, function (results, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
-          // for (var i = 0; i < results.length; i++) {
-          //   createMarker(results[i]);
-          // }
-          // console.log(results[0].geometry.location.lat());
-          setMapConfig({
-            ...mapConfig,
-            center: {
-              lat: results[0].geometry.location.lat(),
-              lng: results[0].geometry.location.lng(),
-            },
-          });
-          setTimeout(() => {
-            setMarkers([
-              {
-                lat: results[0].geometry.location.lat(),
-                lng: results[0].geometry.location.lng(),
-              },
-            ]);
-          }, 150);
-          mapRef.current.map.setCenter({
-            lat: results[0].geometry.location.lat(),
-            lng: results[0].geometry.location.lng(),
-          });
-        } else {
-        }
+      setCountry(countryName);
+      setPointLocationName(pointName);
+      setCurrency({
+        name: currencyCode || "",
+        symbol: currencySymbol || "",
       });
+      locationMetaRef.current = {
+        country: countryName,
+        countryCode: normalizeGlCode(resolvedCountryCode),
+        pointLocationName: pointName,
+      };
+    },
+    []
+  );
+
+  const findLocaionFunc = async (value) => {
+    if (value === "") return;
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          value
+        )}&key=${googleMapsApiKey}`
+      );
+      if (response.data.status === "OK" && response.data.results.length > 0) {
+        const { lat, lng } = response.data.results[0].geometry.location;
+        const position = { lat, lng };
+        setMapConfig((prev) => ({
+          ...prev,
+          center: position,
+        }));
+        setMarkers([position]);
+      }
+    } catch (error) {
+      console.error("Error searching location:", error);
     }
   };
   const onChangeLocationName = (value) => {
@@ -106,121 +94,74 @@ function SetLocationComponent(props) {
   };
 
   useEffect(() => {
-    setMounted(true);
-  }, [locationName, markersJsonString]);
+    let cancelled = false;
 
-  useEffect(() => {
-    setMarkersJsonString(JSON.stringify(markers));
-  }, [markers]);
+    async function reverseGeocode() {
+      if (markers[0]?.lat == null || markers[0]?.lng == null) return;
 
-  useEffect(() => {
-    async function fetchData() {
-      if (mounted === true) {
-        try {
-          setCountry("");
-          setPointLocationName("");
-          setCurrency({ name: "", symbol: "" });
-          const response = await axios.get(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${markers[0].lat},${markers[0].lng}&key=${setting.apiKey}`
-          );
+      setIsGeocoding(true);
+      const requestId = ++geocodeRequestId.current;
 
-          if (response.data.results.length > 0) {
-            // Extract the country from the first result
-            let country = "",
-              locality = "",
-              area = "",
-              pointName = "";
-            for (const ele of response.data.results) {
-              for (const component of ele.address_components) {
-                if (component.types.includes("country")) {
-                  country = CountryData.find(
-                    (el) =>
-                      el.country_code === component.short_name.toLowerCase()
-                  ).country_name;
-                }
-                // if (component.types.includes("locality")) {
-                //   locality = component.long_name;
-                // }
-                // if (
-                //   component.types.includes("administrative_area_level_1") ||
-                //   component.types.includes("administrative_area_level_2") ||
-                //   component.types.includes("administrative_area_level_3")
-                // ) {
-                //   area = component.long_name;
-                // }
+      try {
+        const response = await axios.get(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${markers[0].lat},${markers[0].lng}&key=${googleMapsApiKey}`
+        );
 
-                // if (country !== "" && locality !== "" && area !== "") break;
-                if (country !== "") {
-                  pointName = ele.formatted_address;
-                  break;
-                }
+        if (cancelled || requestId !== geocodeRequestId.current) return;
+
+        if (response.data.results.length > 0) {
+          let resolvedCountry = "",
+            resolvedCountryCode = "",
+            pointName = "";
+
+          for (const ele of response.data.results) {
+            for (const component of ele.address_components) {
+              if (component.types.includes("country")) {
+                const code = component.short_name.toLowerCase();
+                resolvedCountryCode = code;
+                const match = CountryData.find(
+                  (el) => el.country_code === code
+                );
+                resolvedCountry = match ? match.country_name : "";
               }
-              if (country !== "") break;
-              // if (country !== "" && locality !== "" && area !== "") {
-              //   pointName = `${area}, ${locality}, ${country}`;
-              //   break;
-              // }
-            }
 
-            // const pointName = response.data.results[0].formatted_address;
-            // setCountry(country);
-            setPointLocationName(pointName);
-            await currecyFunc(country);
-          } else {
-            // setCountry("");
-            // setPointLocationName("");
+              if (resolvedCountry !== "") {
+                pointName = ele.formatted_address;
+                break;
+              }
+            }
+            if (resolvedCountry !== "") break;
           }
-        } catch (error) {
+
+          if (resolvedCountry !== "") {
+            applyLocationDetails(
+              resolvedCountry,
+              resolvedCountryCode,
+              pointName
+            );
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
           console.error(
             "Error fetching data from Google Maps Geocoding API:",
             error
           );
           setCountry("Please select the correct point!");
-          // setPointLocationName("");
         }
-        setMounted(false);
+      } finally {
+        if (!cancelled) {
+          setIsGeocoding(false);
+        }
       }
     }
-    fetchData();
-  }, [markers, mounted, locationName]);
 
-  const currecyFunc = async (countryFullName) => {
-    try {
-      // const response = await axios.get(
-      //   `https://restcountries.com/v3.1/name/${countryFullName}`
-      // );
-      // const countryInfo = response.data.find(
-      //   (e) => e.name.common === countryFullName
-      // );
-      // const currencyName = JSON.stringify(countryInfo.currencies)
-      //   .split(":")[0]
-      //   .slice(2)
-      //   .slice(0, -1);
-      // setCountry(countryInfo.name.common);
+    reverseGeocode();
 
-      const countryCode =
-        countryFullName === "United Kingdom"
-          ? "gb"
-          : CountryData.reverse().find((el) =>
-              el.country_name.includes(countryFullName)
-            ).country_code;
-      const currencyCode = countryToCurrency[countryCode.toUpperCase()];
-      const currencySymbol = CurrencyData[currencyCode];
-      setCountry(countryFullName);
-      // setCurrency({
-      //   name: currencyName,
-      //   symbol: countryInfo.currencies[currencyName].symbol,
-      // });
-      setCurrency({
-        name: currencyCode,
-        symbol: currencySymbol,
-      });
-    } catch (error) {}
-  };
-
-  // useEffect(() => {
-  //   setCountryName({ ...markers[0] });
-  // }, [markers]);
+    return () => {
+      cancelled = true;
+    };
+  }, [markers, applyLocationDetails]);
 
   const getMyLocation = () => {
     navigator.geolocation.getCurrentPosition((position) => {
@@ -228,30 +169,42 @@ function SetLocationComponent(props) {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      setMapConfig({
-        ...mapConfig,
+      setMapConfig((prev) => ({
+        ...prev,
         center: { ...pos },
-      });
+      }));
       setMarkers([
         {
           ...pos,
         },
       ]);
-      mapRef.current.map.setCenter({
-        ...pos,
-      });
     });
   };
 
+  const formatCurrencyRate = (currencyCode, symbol) => {
+    if (isGeocoding) return "Looking up location...";
+    if (!currencyCode) return "Select a point on the map";
+    const rate = rateData[currencyCode];
+    if (rate == null) return "Loading exchange rate...";
+    return `1 USD → ${rate} ${symbol}`;
+  };
+
   const setLocationCheck = () => {
-    if (pointLocationName !== "") {
+    const meta = locationMetaRef.current;
+    if (meta.pointLocationName !== "") {
+      const rate = rateData[currency.name];
+      if (rate == null) {
+        alert("Exchange rates are still loading. Please try again in a moment.");
+        return;
+      }
       setLocationInfos([
         ...locationInfos,
         {
-          country: country,
-          locationName: pointLocationName,
+          country: meta.country,
+          countryCode: meta.countryCode,
+          locationName: meta.pointLocationName,
           currencyInfo: {
-            rate: rateData[currency.name],
+            rate,
             name: currency.name,
             symbol: currency.symbol,
           },
@@ -323,9 +276,7 @@ function SetLocationComponent(props) {
             <div>
               <span className="h5">Currency:</span>
               <div className="h5 text-secondary">
-                {currency.name !== ""
-                  ? `${rateData[currency.name]} ${currency.symbol}`
-                  : ""}
+                {formatCurrencyRate(currency.name, currency.symbol)}
               </div>
             </div>
           </div>
@@ -445,10 +396,7 @@ function SetLocationComponent(props) {
                   // size={size}
                   // _mapStyle={mapStyle}
                   _mapConfig={mapConfig}
-                  _mapZoomChanged={MapZoomChanged}
                   // _mapCenterChanged={MapCenterChanged}
-                  setGoogleService={setGoogleService}
-                  setGoogle={setGoogle}
                   mapRef={mapRef}
                   // clickable={clickable}
                   markers={markers}

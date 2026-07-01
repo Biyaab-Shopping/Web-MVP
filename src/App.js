@@ -14,7 +14,7 @@ import "./App.css";
 
 import mapIcon from "./assests/map.png";
 
-import * as setting from "./config";
+const backend = process.env.REACT_APP_BACKEND_URL;
 
 function App() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,16 +47,17 @@ function App() {
   };
 
   const fetchRateData = async () => {
-    try {
-      const currencyInfoResponse = await axios.get(
-        `https://openexchangerates.org/api/latest.json?app_id=${setting.open_ex_AppId}`
+    if (!backend) {
+      console.error(
+        "Missing REACT_APP_BACKEND_URL in .env. Restart the dev server after updating .env."
       );
-
-      const rates = currencyInfoResponse.data.rates;
-      setRateData(rates);
-      console.log(rates);
+      return;
+    }
+    try {
+      const currencyInfoResponse = await axios.get(`${backend}/rates`);
+      setRateData(currencyInfoResponse.data);
     } catch (error) {
-      console.log();
+      console.error("Failed to fetch exchange rates:", error);
     }
   };
   useEffect(() => {
@@ -85,15 +86,17 @@ function App() {
           <img src={mapIcon} width={50} alt="map"></img>
         </Modal.Header>
         <Modal.Body>
-          <SetLocationComponent
-            mapConfig={mapConfig}
-            setMapConfig={setMapConfig}
-            markers={markers}
-            setMarkers={setMarkers}
-            rateData={rateData}
-            locationInfos={locationInfos}
-            setLocationInfos={setLocationInfos}
-          />
+          {modalOpen && (
+            <SetLocationComponent
+              mapConfig={mapConfig}
+              setMapConfig={setMapConfig}
+              markers={markers}
+              setMarkers={setMarkers}
+              rateData={rateData}
+              locationInfos={locationInfos}
+              setLocationInfos={setLocationInfos}
+            />
+          )}
         </Modal.Body>
       </Modal>
     </div>
