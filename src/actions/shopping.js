@@ -1,11 +1,10 @@
 import axios from "axios";
 
+import { API_BASE } from "../api";
 import lensCountryData from "../google-lens-countries.json";
 import currencyData from "../currency-symbols-main.json";
 import { resolveCountryCode } from "../utils/countryCode";
 import _ from "lodash";
-
-const backend = process.env.REACT_APP_BACKEND_URL;
 
 export async function fetchData(
   loadingReset,
@@ -32,7 +31,7 @@ export async function fetchData(
         let response;
         try {
           response = await axios.get(
-            `${backend}/shopping/${countryCode}/${
+            `${API_BASE}/shopping/${countryCode}/${
               locationInfos[i].locationName
             }/${encodeURIComponent(searchName)}?start=${
               (page - 1) * num
@@ -108,7 +107,7 @@ export async function fetchImageRelatedData(
           let formdata = new FormData();
           formdata.append("object", image);
           response = await axios.post(
-            `${backend}/shopping/${countryCode}/${locationInfos[i].locationName}`,
+            `${API_BASE}/shopping/${countryCode}/${locationInfos[i].locationName}`,
             formdata
           );
           if (response.data.error) throw response.data.error;
@@ -180,7 +179,7 @@ export function saveImage(imagelink) {
   return new Promise(async (resolve, reject) => {
     try {
       const response = await axios.post(
-        `${backend}/shopping/saveimage`,
+        `${API_BASE}/shopping/saveimage`,
         {
           imageUrl: imagelink,
         }

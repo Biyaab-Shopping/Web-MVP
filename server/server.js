@@ -1,18 +1,31 @@
+const path = require("path");
+const fs = require("fs");
+
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+
 const express = require("express");
 const cors = require("cors");
 const app = express();
-var axios = require("axios");
+const axios = require("axios");
 const createUule = require("create-uule");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const bodyParser = require("body-parser");
 
+const PORT = process.env.PORT || 5000;
+
+function getApiBaseUrl() {
+  if (process.env.APP_URL) {
+    return `${process.env.APP_URL.replace(/\/$/, "")}/api`;
+  }
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  if (backendUrl && !backendUrl.startsWith("/")) {
+    return backendUrl.replace(/\/$/, "");
+  }
+  return `http://localhost:${PORT}/api`;
+}
+
 function buildStaticImageUrl(filename) {
-  const base = (
-    process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/api"
-  ).replace(/\/$/, "");
-  return `${base}/static/${filename}`;
+  return `${getApiBaseUrl()}/static/${filename}`;
 }
 
 const storage = multer.diskStorage({
@@ -29,20 +42,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
-
 app.use(cors());
-// parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
-
-// parse application/json
 app.use(bodyParser.json());
 
 app.use("/api/static", express.static(path.join(__dirname, "uploads")));
 
 app.get("/api/rates", async (req, res) => {
-  const appId =
-    process.env.OPEN_EXCHANGE_APP_ID;
+  const appId = process.env.OPEN_EXCHANGE_APP_ID;
   if (!appId) {
     return res.status(500).json({ error: "Missing OPEN_EXCHANGE_APP_ID in .env" });
   }
@@ -89,7 +96,6 @@ app.post(
     try {
       const uule = createUule(req.params.location);
       const imageUrl = buildStaticImageUrl(req.file.filename);
-      console.log(imageUrl);
       const url = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(
         imageUrl
       )}&uule=${uule}&hl=en&country=${req.params.country}&api_key=${
@@ -125,13 +131,11 @@ app.post("/api/shopping/saveimage", async (req, res) => {
     });
 
     const imageName = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const imagePath = path.join(__dirname, "uploads", imageName); // Path to save the image
+    const imagePath = path.join(__dirname, "uploads", imageName);
 
-    // Create a writable stream and pipe the image data to it
     const writer = fs.createWriteStream(imagePath);
     response.data.pipe(writer);
 
-    // Wait for the writer to finish writing the image
     await new Promise((resolve, reject) => {
       writer.on("finish", resolve);
       writer.on("error", reject);
@@ -142,4 +146,21 @@ app.post("/api/shopping/saveimage", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-app.listen(5000);
+
+const buildPath = path.join(__dirname, "..", "build");
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+}
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  if (fs.existsSync(buildPath)) {
+    console.log("Serving React build from /build");
+  }
+});

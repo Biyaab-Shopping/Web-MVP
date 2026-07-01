@@ -13,25 +13,14 @@ import "bootstrap/dist/css/bootstrap.css";
 import "./App.css";
 
 import mapIcon from "./assests/map.png";
-
-const backend = process.env.REACT_APP_BACKEND_URL;
+import { API_BASE } from "./api";
 
 function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [rateData, setRateData] = useState({});
-  const [locationInfos, setLocationInfos] = useState([
-    //   {
-    //   locationName: "",
-    //   currencyInfo: {
-    //     rate: "",
-    //     name: "",
-    //     symbol: "",
-    //   },
-    // }
-  ]);
+  const [locationInfos, setLocationInfos] = useState([]);
 
   const [mapConfig, setMapConfig] = useState({
-    // center: {},
     center: { lat: 37.7, lng: -122.4 },
     zoom: 8,
   });
@@ -47,14 +36,8 @@ function App() {
   };
 
   const fetchRateData = async () => {
-    if (!backend) {
-      console.error(
-        "Missing REACT_APP_BACKEND_URL in .env. Restart the dev server after updating .env."
-      );
-      return;
-    }
     try {
-      const currencyInfoResponse = await axios.get(`${backend}/rates`);
+      const currencyInfoResponse = await axios.get(`${API_BASE}/rates`);
       setRateData(currencyInfoResponse.data);
     } catch (error) {
       console.error("Failed to fetch exchange rates:", error);
