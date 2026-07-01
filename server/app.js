@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 
+// Platform env vars take precedence; .env fills gaps for local and VPS-style hosts.
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const express = require("express");
@@ -11,11 +12,9 @@ const multer = require("multer");
 const bodyParser = require("body-parser");
 
 const app = express();
-const isVercel = Boolean(process.env.VERCEL);
+const isVercel = process.env.VERCEL === "1";
 const PORT = process.env.PORT || 5000;
-const uploadsDir = isVercel
-  ? "/tmp"
-  : path.join(__dirname, "uploads");
+const uploadsDir = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -39,19 +38,63 @@ function buildStaticImageUrl(filename) {
   return `${getApiBaseUrl()}/static/${filename}`;
 }
 
-async function uploadPublicImage(buffer, filename, contentType) {
-  if (isVercel || process.env.BLOB_READ_WRITE_TOKEN) {
-    const { put } = require("@vercel/blob");
-    const blob = await put(filename, buffer, {
-      access: "public",
-      contentType,
-    });
-    return blob.url;
-  }
+function canUseVercelBlob() {
+  return (
+    isVercel ||
+    process.env.BLOB_READ_WRITE_TOKEN ||
+    process.env.BLOB_STORE_ID
+  );
+}
 
+const BLOB_SETUP_HINT =
+  "Connect a Vercel Blob store to this project (Storage → Blob → Connect to Project), then redeploy.";
+
+async function uploadToVercelBlob(buffer, filename, contentType) {
+  const { put } = require("@vercel/blob");
+  const options = {
+    access: "public",
+    contentType,
+    addRandomSuffix: true,
+  };
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    options.token = process.env.BLOB_READ_WRITE_TOKEN;
+  }
+  const blob = await put(filename, buffer, options);
+  return blob.url;
+}
+
+async function uploadToDisk(buffer, filename) {
   const filePath = path.join(uploadsDir, filename);
   fs.writeFileSync(filePath, buffer);
   return buildStaticImageUrl(filename);
+}
+
+async function uploadPublicImage(buffer, filename, contentType) {
+  if (canUseVercelBlob()) {
+    try {
+      return await uploadToVercelBlob(buffer, filename, contentType);
+    } catch (error) {
+      if (isVercel) {
+        throw new Error(
+          error.message?.includes("token")
+            ? `Vercel Blob is not configured. ${BLOB_SETUP_HINT}`
+            : error.message
+        );
+      }
+      console.warn(
+        "Vercel Blob upload failed, falling back to disk:",
+        error.message
+      );
+    }
+  }
+
+  if (!process.env.APP_URL && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Set APP_URL to your public server URL (e.g. https://biyaab.com) so uploaded images are reachable for image search."
+    );
+  }
+
+  return uploadToDisk(buffer, filename);
 }
 
 const upload = multer({
@@ -207,8 +250,8 @@ app.post("/api/shopping/saveimage", async (req, res) => {
   }
 });
 
-// Local production: serve React build from Express.
-// On Vercel, static files are served from /build via vercel.json — express.static is ignored.
+// Local production and VPS/Railway/Render/etc.: serve React build from Express.
+// On Vercel, static files are served from /build via vercel.json.
 if (!isVercel) {
   const buildPath = path.join(__dirname, "..", "build");
   if (fs.existsSync(buildPath)) {
